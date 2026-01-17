@@ -21,14 +21,14 @@ A Stardew Valley-inspired farming game built with Python and Pygame.
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/ritikaaramani/pydew-.git
-   cd pydew-
+   git clone https://github.com/niladribh24/Farming_pygame.git
+   cd Farming_pygame
    ```
 
 2. Create a virtual environment (optional but recommended):
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   venv\Scripts\activate
    ```
 
 3. Install dependencies:
@@ -38,7 +38,6 @@ A Stardew Valley-inspired farming game built with Python and Pygame.
 
 4. Run the game:
    ```bash
-   cd code
    python main.py
    ```
 
