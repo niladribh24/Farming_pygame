@@ -1,6 +1,7 @@
 import pygame, sys
 from settings import *
 from level import Level
+import settings_menu as sm_module
 
 class Game:
 	def __init__(self):
@@ -19,6 +20,12 @@ class Game:
   
 			dt = self.clock.tick() / 1000
 			self.level.run(dt)
+            
+			# Check for game reset
+			if getattr(self.level, 'reset_pending', False):
+				self.level = Level()
+				sm_module.settings_menu = None # Reset singleton
+                
 			pygame.display.update()
 
 if __name__ == '__main__':

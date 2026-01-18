@@ -63,14 +63,17 @@ class Particle(Generic):
 			self.kill()
 
 class Tree(Generic):
-	def __init__(self, pos, surf, groups, name, player_add):
+	def __init__(self, pos, surf, groups, name, player_add, all_sprites):
 		super().__init__(pos, surf, groups)
+		self.all_sprites = all_sprites
 
 		# tree attributes
 		self.health = 5
 		self.alive = True
 		stump_path = f'./graphics/stumps/{"small" if name == "Small" else "large"}.png'
 		self.stump_surf = pygame.image.load(stump_path).convert_alpha()
+		self.original_surf = surf
+		self.respawn_timer = 0
 
 		# apples
 		self.apple_surf = pygame.image.load('./graphics/fruit/apple.png')
@@ -97,31 +100,56 @@ class Tree(Generic):
 			Particle(
 				pos = random_apple.rect.topleft,
 				surf = random_apple.image, 
-				groups = self.groups()[0], 
+				groups = self.all_sprites, 
 				z = LAYERS['fruit'])
 			self.player_add('apple')
 			random_apple.kill()
 
 	def check_death(self):
 		if self.health <= 0:
-			Particle(self.rect.topleft, self.image, self.groups()[0], LAYERS['fruit'], 300)
+			Particle(self.rect.topleft, self.image, self.all_sprites, LAYERS['fruit'], 300)
 			self.image = self.stump_surf
 			self.rect = self.image.get_rect(midbottom = self.rect.midbottom)
 			self.hitbox = self.rect.copy().inflate(-10,-self.rect.height * 0.6)
 			self.alive = False
 			self.player_add('wood')
+			self.respawn_timer = 0
+			
+			# Auto-collect remaining apples
+			for apple in self.apple_sprites.sprites():
+				Particle(apple.rect.topleft, apple.image, self.all_sprites, LAYERS['fruit'])
+				self.player_add('apple')
+				apple.kill()
+
+	def respawn(self):
+		self.image = self.original_surf
+		self.rect = self.image.get_rect(midbottom = self.rect.midbottom)
+		self.hitbox = self.rect.copy().inflate(-10,-self.rect.height * 0.6)
+		self.health = 5
+		self.alive = True
+		self.respawn_timer = 0
+		self.create_fruit()
 
 	def update(self,dt):
 		if self.alive:
 			self.check_death()
 
 	def create_fruit(self):
-		for pos in self.apple_pos:
-			if randint(0,10) < 2:
+		if not self.alive:
+			return
+		
+		# Limit apples to max 4 as requested
+		fruit_positions = self.apple_pos
+		if len(fruit_positions) > 4:
+			import random
+			fruit_positions = random.sample(fruit_positions, 4)
+			
+		for pos in fruit_positions:
+			if randint(0,10) < 11: # Always spawn for debugging/fun
 				x = pos[0] + self.rect.left
 				y = pos[1] + self.rect.top
 				Generic(
 					pos = (x,y), 
 					surf = self.apple_surf, 
-					groups = [self.apple_sprites,self.groups()[0]],
+					groups = [self.apple_sprites, self.all_sprites],
 					z = LAYERS['fruit'])

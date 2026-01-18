@@ -37,16 +37,30 @@ APPLE_POS = {
 
 GROW_SPEED = {
 	'corn': 1,
-	'tomato': 0.7
+	'tomato': 0.7,
+	'wheat': 0.8,
+	'carrot': 0.6,
+	'potato': 0.9
 }
 
 SALE_PRICES = {
 	'wood': 4,
 	'apple': 2,
 	'corn': 10,
-	'tomato': 20
+	'tomato': 20,
+	'wheat': 8,
+	'carrot': 12,
+	'potato': 8
 }
 PURCHASE_PRICES = {
 	'corn': 4,
-	'tomato': 5
+	'tomato': 5,
+	'organic_fertilizer': 10,
+	'chemical_fertilizer': 5
 }
+
+# Learning System UI Positions
+SOIL_HEALTH_BAR_POS = (SCREEN_WIDTH - 220, 20)
+SCORE_DISPLAY_POS = (SCREEN_WIDTH - 220, 90)
+NOTIFICATION_POS = (SCREEN_WIDTH // 2, 140)
+DAY_DISPLAY_POS = (20, 20)

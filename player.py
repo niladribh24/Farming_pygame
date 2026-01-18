@@ -2,6 +2,7 @@ import pygame
 from settings import *
 from support import *
 from timer import Timer
+from knowledge_base import FERTILIZER_DATA, IRRIGATION_DATA, INITIAL_WATER_RESERVE, MAX_WATER_RESERVE
 
 class Player(pygame.sprite.Sprite):
 	def __init__(self, pos, group, collision_sprites, tree_sprites, interaction, soil_layer, toggle_shop):
@@ -31,6 +32,9 @@ class Player(pygame.sprite.Sprite):
 			'tool switch': Timer(200),
 			'seed use': Timer(350,self.use_seed),
 			'seed switch': Timer(200),
+			'fertilizer use': Timer(350, self.use_fertilizer),
+			'fertilizer switch': Timer(200),
+			'irrigation switch': Timer(200),
 		}
 
 		# tools 
@@ -38,8 +42,8 @@ class Player(pygame.sprite.Sprite):
 		self.tool_index = 0
 		self.selected_tool = self.tools[self.tool_index]
 
-		# seeds 
-		self.seeds = ['corn', 'tomato']
+		# seeds (5 types)
+		self.seeds = ['corn', 'tomato', 'wheat', 'carrot', 'potato']
 		self.seed_index = 0
 		self.selected_seed = self.seeds[self.seed_index]
 
@@ -48,12 +52,43 @@ class Player(pygame.sprite.Sprite):
 			'wood':   20,
 			'apple':  20,
 			'corn':   20,
-			'tomato': 20
+			'tomato': 20,
+			'wheat':  0,
+			'carrot': 0,
+			'potato': 0
 		}
 		self.seed_inventory = {
 		'corn': 5,
-		'tomato': 5
+		'tomato': 5,
+		'wheat': 3,
+		'carrot': 3,
+		'potato': 2
 		}
+		# Fertilizer inventory - 8 types (5 organic, 3 chemical)
+		self.fertilizer_inventory = {
+			'compost': 3,
+			'bone_meal': 2,
+			'fish_emulsion': 1,
+			'blood_meal': 1,
+			'wood_ash': 2,
+			'npk_10_10_10': 2,
+			'npk_5_10_10': 1,
+			'urea': 1
+		}
+		# Fertilizer selection (organic ones first)
+		self.fertilizers = ['compost', 'bone_meal', 'fish_emulsion', 'blood_meal', 'wood_ash', 'npk_10_10_10', 'npk_5_10_10', 'urea']
+		self.fertilizer_index = 0
+		self.selected_fertilizer = self.fertilizers[self.fertilizer_index]
+		
+		# Irrigation system
+		self.irrigation_modes = ['manual', 'efficient', 'drip']
+		self.irrigation_index = 0
+		self.selected_irrigation = self.irrigation_modes[self.irrigation_index]
+		
+		# Water reserve (for rainwater collection)
+		self.water_reserve = INITIAL_WATER_RESERVE
+		self.max_water_reserve = MAX_WATER_RESERVE
+		
 		self.money = 200
 
 		# interaction
@@ -62,6 +97,9 @@ class Player(pygame.sprite.Sprite):
 		self.sleep = False
 		self.soil_layer = soil_layer
 		self.toggle_shop = toggle_shop
+		
+		# Learning system reference (set by Level)
+		self.learning_system = None
 
 		# sound
 		self.watering = pygame.mixer.Sound('./audio/water.mp3')
@@ -88,6 +126,33 @@ class Player(pygame.sprite.Sprite):
 		if self.seed_inventory[self.selected_seed] > 0:
 			self.soil_layer.plant_seed(self.target_pos, self.selected_seed)
 			self.seed_inventory[self.selected_seed] -= 1
+	
+	def use_fertilizer(self):
+		"""Apply selected fertilizer to soil tile"""
+		if self.fertilizer_inventory[self.selected_fertilizer] > 0:
+			if self.soil_layer.apply_fertilizer(self.target_pos, self.selected_fertilizer):
+				self.fertilizer_inventory[self.selected_fertilizer] -= 1
+				
+				# Track for achievements
+				if self.learning_system and self.selected_fertilizer == 'organic':
+					self.learning_system.organic_fertilizer_count += 1
+	
+	def collect_rainwater(self, amount=5):
+		"""Collect rainwater into reserve (called on rainy days)"""
+		self.water_reserve = min(self.max_water_reserve, self.water_reserve + amount)
+		if self.learning_system:
+			self.learning_system.add_notification(f"💧 Collected rainwater (+{amount})")
+	
+	def get_unlocked_irrigation_modes(self):
+		"""Get list of irrigation modes available based on skills"""
+		unlocked = ['manual']  # Always available
+		if self.learning_system:
+			skills = self.learning_system.skill_tree.get_unlocked_skills()
+			if 'Water Management' in skills:
+				unlocked.append('efficient')
+			if 'Drip Irrigation' in skills:
+				unlocked.append('drip')
+		return unlocked
 
 	def import_assets(self):
 		self.animations = {'up': [],'down': [],'left': [],'right': [],
@@ -155,6 +220,33 @@ class Player(pygame.sprite.Sprite):
 				self.seed_index += 1
 				self.seed_index = self.seed_index if self.seed_index < len(self.seeds) else 0
 				self.selected_seed = self.seeds[self.seed_index]
+			
+			# FERTILIZER CONTROLS
+			# F key = switch fertilizer type
+			if keys[pygame.K_f] and not self.timers['fertilizer switch'].active:
+				self.timers['fertilizer switch'].activate()
+				self.fertilizer_index += 1
+				self.fertilizer_index = self.fertilizer_index if self.fertilizer_index < len(self.fertilizers) else 0
+				self.selected_fertilizer = self.fertilizers[self.fertilizer_index]
+			
+			# R key = apply fertilizer
+			if keys[pygame.K_r] and not self.timers['fertilizer use'].active:
+				self.timers['fertilizer use'].activate()
+				self.direction = pygame.math.Vector2()
+				self.frame_index = 0
+			
+			# IRRIGATION CONTROLS
+			# I key = switch irrigation mode (only unlocked modes)
+			if keys[pygame.K_i] and not self.timers['irrigation switch'].active:
+				self.timers['irrigation switch'].activate()
+				unlocked_modes = self.get_unlocked_irrigation_modes()
+				if len(unlocked_modes) > 1:
+					current_idx = unlocked_modes.index(self.selected_irrigation) if self.selected_irrigation in unlocked_modes else 0
+					next_idx = (current_idx + 1) % len(unlocked_modes)
+					self.selected_irrigation = unlocked_modes[next_idx]
+					if self.learning_system:
+						mode_name = IRRIGATION_DATA[self.selected_irrigation]['name']
+						self.learning_system.add_notification(f"🚿 Switched to {mode_name}")
 
 			if keys[pygame.K_RETURN]:
 				collided_interaction_sprite = pygame.sprite.spritecollide(self,self.interaction,False)
