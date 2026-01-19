@@ -174,7 +174,7 @@ class Overlay:
 			
 		score = self.learning_system.total_score
 		score_text = self.font.render(f'Score: {score}', False, 'White')
-		score_rect = score_text.get_rect(topleft=SCORE_DISPLAY_POS)
+		score_rect = score_text.get_rect(topright=(SCREEN_WIDTH - 20, 90))
 		
 		# Background
 		bg_rect = score_rect.inflate(20, 10)
@@ -286,9 +286,9 @@ class Overlay:
 			alpha = min(255, int(255 * (time_left / self.notification_duration)))
 			
 			# Determine color based on message type
-			if '✔' in msg or '+' in msg:
+			if '✔' in msg or '(+' in msg:
 				color = (100, 255, 100)  # Green for positive
-			elif '✖' in msg or '-' in msg:
+			elif '✖' in msg or '(-' in msg:
 				color = (255, 100, 100)  # Red for negative
 			elif '🏆' in msg or '🔓' in msg:
 				color = (255, 215, 0)  # Gold for achievements/unlocks

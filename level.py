@@ -218,8 +218,8 @@ class Level:
 
 		self.save_manager.save_game(self.player, self.soil_layer, self.learning_system, self.tree_sprites)
 
-		# sky
-		self.sky.start_color = [255,255,255]
+		# sky - reset day/night cycle
+		self.sky.reset_cycle()
 
 	def plant_collision(self):
 		if self.soil_layer.plant_sprites:
@@ -279,6 +279,12 @@ class Level:
 		if self.raining and not self.shop_active:
 			self.rain.update()
 		self.sky.display(dt)
+		
+		# Check for automatic day transition when night ends
+		if self.sky.night_complete:
+			self.sky.night_complete = False
+			self.reset()
+			self.sky.reset_cycle()
 
 		# Draw menus/book LAST so they appear on top of everything
 		if self.settings_menu.is_open:

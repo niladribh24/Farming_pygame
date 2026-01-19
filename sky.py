@@ -8,16 +8,67 @@ class Sky:
 	def __init__(self):
 		self.display_surface = pygame.display.get_surface()
 		self.full_surf = pygame.Surface((SCREEN_WIDTH,SCREEN_HEIGHT))
-		self.start_color = [255,255,255]
-		self.end_color = (38,101,189)
-
+		self.day_color = [255,255,255]  # Bright day
+		self.night_color = (38,101,189)  # Dark night
+		self.current_color = [255,255,255]
+		
+		# 4-phase cycle timing (in milliseconds)
+		self.bright_day_duration = 90000   # Stay bright (1:30)
+		self.sunset_duration = 30000       # Darken (0:30)
+		self.dark_night_duration = 90000   # Stay dark (1:30)
+		self.sunrise_duration = 30000      # Brighten (0:30)
+		
+		self.phase_start_time = pygame.time.get_ticks()
+		self.current_phase = 'day'  # 'day', 'sunset', 'night', 'sunrise'
+		self.night_complete = False
+	
 	def display(self, dt):
-		for index, value in enumerate(self.end_color):
-			if self.start_color[index] > value:
-				self.start_color[index] -= 2 * dt
-
-		self.full_surf.fill(self.start_color)
+		current_time = pygame.time.get_ticks()
+		elapsed = current_time - self.phase_start_time
+		
+		if self.current_phase == 'day':
+			# BRIGHT DAY: stay at full brightness
+			self.current_color = [255, 255, 255]
+			if elapsed >= self.bright_day_duration:
+				self.current_phase = 'sunset'
+				self.phase_start_time = current_time
+		
+		elif self.current_phase == 'sunset':
+			# SUNSET: gradually darken
+			progress = min(1.0, elapsed / self.sunset_duration)
+			for index, value in enumerate(self.night_color):
+				self.current_color[index] = 255 - (255 - value) * progress
+			if elapsed >= self.sunset_duration:
+				self.current_phase = 'night'
+				self.phase_start_time = current_time
+		
+		elif self.current_phase == 'night':
+			# DARK NIGHT: stay dark
+			for index, value in enumerate(self.night_color):
+				self.current_color[index] = value
+			if elapsed >= self.dark_night_duration:
+				self.current_phase = 'sunrise'
+				self.phase_start_time = current_time
+		
+		elif self.current_phase == 'sunrise':
+			# SUNRISE: gradually brighten
+			progress = min(1.0, elapsed / self.sunrise_duration)
+			for index, value in enumerate(self.night_color):
+				self.current_color[index] = value + (255 - value) * progress
+			if elapsed >= self.sunrise_duration:
+				self.current_phase = 'day'
+				self.phase_start_time = current_time
+				self.night_complete = True  # Signal new day
+		
+		self.full_surf.fill(self.current_color)
 		self.display_surface.blit(self.full_surf, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
+	
+	def reset_cycle(self):
+		"""Reset to start of day (called after sleeping or day transition)"""
+		self.current_color = [255, 255, 255]
+		self.phase_start_time = pygame.time.get_ticks()
+		self.current_phase = 'day'
+		self.night_complete = False
 
 class Drop(Generic):
 	def __init__(self, surf, pos, moving, groups, z):

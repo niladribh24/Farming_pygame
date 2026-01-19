@@ -23,9 +23,9 @@ class Menu:
         self.menu_y = (SCREEN_HEIGHT - self.height) // 2
         
         # Tabs
-        self.tabs = ['SELL', 'SEEDS', 'FERTILIZERS']
+        self.tabs = ['SELL', 'SEEDS', 'FERTILIZERS', 'SUPPLIES']
         self.current_tab = 0
-        self.tab_width = self.width // 3
+        self.tab_width = self.width // 4
         
         # Build item lists per tab
         self._build_item_lists()
@@ -46,13 +46,18 @@ class Menu:
             'sell': (255, 150, 150),
             'buy': (150, 255, 150),
         }
+        
+        # Shop notifications (displayed on top of menu)
+        self.notifications = []
+        self.notification_duration = 2000  # 2 seconds
 
     def _build_item_lists(self):
         """Build item lists for each tab"""
         self.tab_items = {
             0: [('sell', item) for item in self.player.item_inventory.keys()],  # SELL
             1: [('buy_seed', seed) for seed in self.player.seed_inventory.keys()],  # SEEDS
-            2: [('buy_fert', fert) for fert in self.player.fertilizer_inventory.keys()]  # FERTILIZERS
+            2: [('buy_fert', fert) for fert in self.player.fertilizer_inventory.keys()],  # FERTILIZERS
+            3: [('buy_water', 'water')]  # SUPPLIES
         }
 
     def display_money(self):
@@ -143,10 +148,14 @@ class Menu:
             name = f"{item.title()} Seeds"
             amount = self.player.seed_inventory[item]
             price = CROP_DATA.get(item, {}).get('seed_price', 5)
-        else:  # buy_fert
+        elif action == 'buy_fert':
             name = FERTILIZER_DATA.get(item, {}).get('name', item)
             amount = self.player.fertilizer_inventory[item]
             price = FERTILIZER_DATA.get(item, {}).get('cost', 10)
+        else:  # buy_water
+            name = "Water Supply (+10)"
+            amount = int(self.player.water_reserve)
+            price = 5
         
         return name, amount, price
 
@@ -192,18 +201,36 @@ class Menu:
             if self.player.item_inventory[item] > 0:
                 self.player.item_inventory[item] -= 1
                 self.player.money += SALE_PRICES.get(item, 5)
+            else:
+                self.show_notification(f"No {item} to sell!")
         
         elif action == 'buy_seed':
             price = CROP_DATA.get(item, {}).get('seed_price', 5)
             if self.player.money >= price:
                 self.player.seed_inventory[item] += 1
                 self.player.money -= price
+            else:
+                self.show_notification("Not enough money!")
         
         elif action == 'buy_fert':
             price = FERTILIZER_DATA.get(item, {}).get('cost', 10)
             if self.player.money >= price:
                 self.player.fertilizer_inventory[item] += 1
                 self.player.money -= price
+            else:
+                self.show_notification("Not enough money!")
+        
+        elif action == 'buy_water':
+            price = 5
+            if self.player.money >= price:
+                # Add water but don't exceed max
+                self.player.water_reserve = min(
+                    self.player.max_water_reserve,
+                    self.player.water_reserve + 10
+                )
+                self.player.money -= price
+            else:
+                self.show_notification("Not enough money!")
 
     def draw_help(self):
         """Draw help text at bottom"""
@@ -211,6 +238,31 @@ class Menu:
         help_surf = self.small_font.render(help_text, False, (150, 150, 150))
         help_rect = help_surf.get_rect(midbottom=(SCREEN_WIDTH // 2, self.menu_y + self.height - 20))
         self.display_surface.blit(help_surf, help_rect)
+    
+    def show_notification(self, message):
+        """Add a notification to display in the shop (replaces existing)"""
+        current_time = pygame.time.get_ticks()
+        # Replace existing notification instead of stacking
+        self.notifications = [(message, current_time)]
+    
+    def draw_notifications(self):
+        """Draw shop notifications on top of menu"""
+        current_time = pygame.time.get_ticks()
+        
+        # Remove expired notifications
+        self.notifications = [(msg, t) for msg, t in self.notifications 
+            if current_time - t < self.notification_duration]
+        
+        # Draw single notification
+        for msg, start_time in self.notifications:
+            notif_text = self.font.render(msg, False, (255, 255, 255))
+            notif_rect = notif_text.get_rect(center=(SCREEN_WIDTH // 2, self.menu_y - 40))
+            
+            # Background
+            bg_rect = notif_rect.inflate(20, 10)
+            pygame.draw.rect(self.display_surface, (60, 60, 80), bg_rect, 0, 6)
+            pygame.draw.rect(self.display_surface, (150, 150, 180), bg_rect, 2, 6)
+            self.display_surface.blit(notif_text, notif_rect)
 
     def draw_shopkeeper(self):
         """Draw shopkeeper character with speech bubble"""
@@ -272,3 +324,4 @@ class Menu:
         self.draw_items()
         self.draw_help()
         self.display_money()
+        self.draw_notifications()

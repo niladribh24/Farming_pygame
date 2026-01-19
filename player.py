@@ -115,8 +115,18 @@ class Player(pygame.sprite.Sprite):
 					tree.damage()
 		
 		if self.selected_tool == 'water':
-			self.soil_layer.water(self.target_pos)
-			self.watering.play()
+			# Get water cost based on irrigation mode
+			water_cost = IRRIGATION_DATA[self.selected_irrigation]['water_cost']
+			
+			# Check if player has enough water
+			if self.water_reserve >= water_cost:
+				self.water_reserve -= water_cost
+				self.soil_layer.water(self.target_pos)
+				self.watering.play()
+			else:
+				# Alert: no water
+				if self.learning_system:
+					self.learning_system.add_notification("No water!")
 
 	def get_target_pos(self):
 
@@ -126,6 +136,10 @@ class Player(pygame.sprite.Sprite):
 		if self.seed_inventory[self.selected_seed] > 0:
 			self.soil_layer.plant_seed(self.target_pos, self.selected_seed)
 			self.seed_inventory[self.selected_seed] -= 1
+		else:
+			# Alert: no seeds
+			if self.learning_system:
+				self.learning_system.add_notification(f"No {self.selected_seed} seeds!")
 	
 	def use_fertilizer(self):
 		"""Apply selected fertilizer to soil tile"""
@@ -136,6 +150,11 @@ class Player(pygame.sprite.Sprite):
 				# Track for achievements
 				if self.learning_system and self.selected_fertilizer == 'organic':
 					self.learning_system.organic_fertilizer_count += 1
+		else:
+			# Alert: no fertilizer
+			if self.learning_system:
+				fert_name = FERTILIZER_DATA[self.selected_fertilizer]['name']
+				self.learning_system.add_notification(f"No {fert_name}!")
 	
 	def collect_rainwater(self, amount=5):
 		"""Collect rainwater into reserve (called on rainy days)"""
@@ -176,20 +195,20 @@ class Player(pygame.sprite.Sprite):
 		keys = pygame.key.get_pressed()
 
 		if not self.timers['tool use'].active and not self.sleep:
-			# directions 
-			if keys[pygame.K_UP]:
+			# directions (WASD)
+			if keys[pygame.K_w]:
 				self.direction.y = -1
 				self.status = 'up'
-			elif keys[pygame.K_DOWN]:
+			elif keys[pygame.K_s]:
 				self.direction.y = 1
 				self.status = 'down'
 			else:
 				self.direction.y = 0
 
-			if keys[pygame.K_RIGHT]:
+			if keys[pygame.K_d]:
 				self.direction.x = 1
 				self.status = 'right'
-			elif keys[pygame.K_LEFT]:
+			elif keys[pygame.K_a]:
 				self.direction.x = -1
 				self.status = 'left'
 			else:

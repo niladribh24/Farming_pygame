@@ -237,13 +237,13 @@ CROP_FERTILIZER_GUIDE = {
 # Central reference for all soil health changes
 # ==============================================================================
 SOIL_IMPACTS = {
-    "correct_water": {"soil": 2, "score": 3, "message": "✔ Correct watering (+3)"},
-    "over_water": {"soil": -5, "score": -3, "message": "✖ Over-watering detected (-3)"},
-    "under_water": {"soil": -2, "score": -2, "message": "✖ Under-watering detected (-2)"},
-    "monocrop": {"soil": -6, "score": -4, "message": "✖ Monocropping depletes soil (-4)"},
-    "rotation": {"soil": 5, "score": 4, "message": "✔ Crop rotation bonus (+4)"},
-    "fallow": {"soil": 4, "score": 2, "message": "✔ Fallow land recovered (+2)"},
-    "rain_overwater": {"soil": -3, "score": -2, "message": "✖ Watered during rain (-2)"}
+    "correct_water": {"soil": 2, "score": 1, "message": "✔ Correct watering (+1)"},
+    "over_water": {"soil": -5, "score": -5, "message": "✖ Over-watering detected (-5)"},
+    "under_water": {"soil": -2, "score": -3, "message": "✖ Under-watering detected (-3)"},
+    "monocrop": {"soil": -6, "score": -6, "message": "✖ Monocropping depletes soil (-6)"},
+    "rotation": {"soil": 5, "score": 2, "message": "✔ Crop rotation bonus (+2)"},
+    "fallow": {"soil": 4, "score": 1, "message": "✔ Fallow land recovered (+1)"},
+    "rain_overwater": {"soil": -3, "score": -4, "message": "✖ Watered during rain (-4)"}
 }
 
 # ==============================================================================
@@ -340,7 +340,7 @@ MAX_WATER_RESERVE = 50
 IRRIGATION_DATA = {
     "manual": {
         "name": "Manual Watering",
-        "water_cost": 1,           # Water used per action
+        "water_cost": 2,           # Water used per action
         "efficiency": 1.0,         # Multiplier (1.0 = standard)
         "overwater_threshold": 3,  # Times before penalty
         "unlocked": True,
