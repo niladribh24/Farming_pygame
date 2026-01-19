@@ -1,24 +1,24 @@
 {
     "player": {
-        "money": 200,
+        "money": 188,
         "item_inventory": {
             "wood": 22,
-            "apple": 30,
-            "corn": 20,
+            "apple": 34,
+            "corn": 23,
             "tomato": 20,
-            "wheat": 0,
-            "carrot": 0,
-            "potato": 0
-        },
-        "seed_inventory": {
-            "corn": 4,
-            "tomato": 4,
             "wheat": 2,
             "carrot": 0,
             "potato": 2
         },
+        "seed_inventory": {
+            "corn": 0,
+            "tomato": 0,
+            "wheat": 0,
+            "carrot": 0,
+            "potato": 0
+        },
         "fertilizer_inventory": {
-            "compost": 1,
+            "compost": 0,
             "bone_meal": 2,
             "fish_emulsion": 1,
             "blood_meal": 1,
@@ -27,9 +27,9 @@
             "npk_5_10_10": 1,
             "urea": 1
         },
-        "water_reserve": 20,
-        "selected_tool_index": 1,
-        "selected_seed_index": 3
+        "water_reserve": 30,
+        "selected_tool_index": 2,
+        "selected_seed_index": 2
     },
     "soil": {
         "soil_health": [
@@ -1192,8 +1192,60 @@
                 50,
                 50,
                 50,
+                44,
+                80,
                 50,
-                71,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50
+            ],
+            [
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                59,
+                50,
                 50,
                 50,
                 50,
@@ -1455,6 +1507,14 @@
                 50,
                 50,
                 50,
+                58,
+                50,
+                50,
+                56,
+                60,
+                60,
+                60,
+                60,
                 50,
                 50,
                 50,
@@ -1462,6 +1522,50 @@
                 50,
                 50,
                 50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50
+            ],
+            [
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                50,
+                52,
+                58,
                 50,
                 50,
                 50,
@@ -1513,111 +1617,7 @@
                 50,
                 50,
                 50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50
-            ],
-            [
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50
-            ],
-            [
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
+                58,
                 50,
                 50,
                 50,
@@ -3395,16 +3395,21 @@
                     "F"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X",
+                    "X"
                 ],
                 [
                     "F"
@@ -3500,10 +3505,13 @@
                     "F"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
                     "F"
@@ -3586,10 +3594,12 @@
                     "F"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
                     "F",
@@ -3671,94 +3681,12 @@
                     "F"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                []
-            ],
-            [
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
                     "F"
@@ -4025,28 +3953,14 @@
                 [
                     "F"
                 ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
                 [],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
                 [
                     "F"
                 ],
@@ -4169,6 +4083,122 @@
                 [
                     "F"
                 ],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                []
+            ],
+            [
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [],
+                [
+                    "F",
+                    "X"
+                ],
+                [
+                    "F",
+                    "X",
+                    "X"
+                ],
+                [
+                    "F",
+                    "X",
+                    "X"
+                ],
+                [
+                    "F",
+                    "X"
+                ],
+                [
+                    "F",
+                    "X",
+                    "P",
+                    "X"
+                ],
+                [
+                    "F",
+                    "X",
+                    "P",
+                    "W"
+                ],
+                [
+                    "F",
+                    "X",
+                    "P",
+                    "W"
+                ],
+                [
+                    "F",
+                    "X",
+                    "P",
+                    "W"
+                ],
+                [],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
                 [
                     "F"
                 ],
@@ -4215,28 +4245,36 @@
                 ],
                 [],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [],
                 [
@@ -4317,28 +4355,37 @@
                 ],
                 [],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [
-                    "F"
+                    "F",
+                    "X"
                 ],
                 [],
                 [
@@ -8191,8 +8238,60 @@
                 null,
                 null,
                 null,
+                "potato",
+                "corn",
                 null,
-                "carrot",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ],
+            [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "potato",
+                null,
                 null,
                 null,
                 null,
@@ -8454,6 +8553,14 @@
                 null,
                 null,
                 null,
+                "potato",
+                null,
+                null,
+                "corn",
+                "tomato",
+                "tomato",
+                "tomato",
+                "tomato",
                 null,
                 null,
                 null,
@@ -8461,6 +8568,50 @@
                 null,
                 null,
                 null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ],
+            [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "wheat",
                 null,
                 null,
                 null,
@@ -8512,111 +8663,7 @@
                 null,
                 null,
                 null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
-            ],
-            [
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
-            ],
-            [
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
+                "wheat",
                 null,
                 null,
                 null,
@@ -9113,13 +9160,48 @@
                 null
             ]
         ],
-        "plants": []
+        "plants": [
+            {
+                "x": 21,
+                "y": 28,
+                "type": "tomato",
+                "age": 3,
+                "harvestable": true,
+                "unwatered_days": 0
+            },
+            {
+                "x": 22,
+                "y": 28,
+                "type": "tomato",
+                "age": 3,
+                "harvestable": true,
+                "unwatered_days": 0
+            },
+            {
+                "x": 23,
+                "y": 28,
+                "type": "tomato",
+                "age": 3,
+                "harvestable": true,
+                "unwatered_days": 0
+            },
+            {
+                "x": 24,
+                "y": 28,
+                "type": "tomato",
+                "age": 3,
+                "harvestable": true,
+                "unwatered_days": 0
+            }
+        ]
     },
     "learning": {
-        "day": 23,
-        "score": 22,
+        "day": 35,
+        "score": 160,
         "daily_actions": [],
-        "achievements": [],
+        "achievements": [
+            "water_saver"
+        ],
         "skills": {}
     },
     "trees": [
