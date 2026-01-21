@@ -1,8 +1,27 @@
 ideas :
-- Watering needs water in water gauge
-- Water gauge altered with water bottles/rainwater harvesting
 - Badges at shopkeeper for finishing quizzes 
-- alert when no seeds
 - inventory
+- Rain Water Harvesting
 - soil health bar
-- Skills
+- Skills increase ability (more water capacity, faster movement speed, cheaper prices)
+- Punishment for not sleeping all night
+
+DONE :
+- Watering needs water in water gauge
+- Water can be bought in shop under SUPPLIES
+- WASD controls
+- Alert when :
+
+a. no water
+b. no seeds
+c. no fertilizer
+d. not enough money to buy in shop
+e. no crop to sell in shop
+
+- Better Day Night Cycle :
+
+Bright Day	       - 1:30
+Sunset (darken)	   - 0:30
+Dark Night	       - 1:30
+Sunrise (brighten) - 0:30
+Total Cycle	       - 4:00
