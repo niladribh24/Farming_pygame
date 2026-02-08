@@ -35,7 +35,7 @@ Over-watering wastes water and causes:
 • Fungal diseases
 
 Under-watering stresses plants and reduces yield.
-The key is giving JUST the right amount!
+The key is giving JUST the right amount! Best time to water: Early Morning.
         """,
         "game_effect": "Correct watering: +2 soil, +3 score | Over-watering: -5 soil, -3 score",
         "real_world": "Agriculture uses 70% of global freshwater - efficiency matters!",
@@ -72,10 +72,10 @@ CHEMICAL FERTILIZER:
 Rain is FREE water! Instead of letting it run off:
 • Collect it in tanks or ponds
 • Use during droughts
-• Reduce dependence on groundwater
+• Reduce dependence on groundwater (Aquifer Drain)
 • Save money on water bills
 
-In the game, rainy days automatically fill your water reserve!
+Best surface for collection: Clean Roof.
         """,
         "game_effect": "Rainy day: +5 water reserve automatically",
         "real_world": "Ancient technique used from India to Rome",
@@ -111,7 +111,7 @@ Unlock this by not over-watering for 5 days!
 Soil is ALIVE! It contains:
 • Billions of microorganisms
 • Fungi networks (mycelium)
-• Earthworms and insects
+• Earthworms (sign of health!) and insects
 • Organic matter
 
 When soil is healthy:
@@ -119,11 +119,28 @@ When soil is healthy:
 ✅ Natural pest resistance  
 ✅ Higher yields
 ✅ Carbon storage (fights climate change!)
-
-Your soil health bar shows average health across your farm.
         """,
         "game_effect": "Soil 80+: bonus harvest | Soil 30-: reduced yield",
         "real_world": "1 gram of soil contains 1 billion bacteria",
+        "unlocked": True
+    },
+    
+    "erosion_control": {
+        "title": "🛡️ Erosion Control",
+        "category": "Soil Recovery",
+        "summary": "Prevent precious topsoil from washing or blowing away.",
+        "why_it_matters": """
+Soil erosion removes the fertile top layer.
+Causes: Wind (on bare fields) and Water runoff.
+
+Solutions:
+• Cover Cropping: Keep roots in soil year-round
+• Contour Farming: Plow across slopes, not down them
+• Mulching: Protect soil surface
+• Avoid over-tilling (Deep Tilling destroys structure)
+        """,
+        "game_effect": "Using cover crops prevents daily soil loss",
+        "real_world": "Dust Bowl of 1930s was caused by massive erosion",
         "unlocked": True
     },
     

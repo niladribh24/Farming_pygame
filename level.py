@@ -189,7 +189,17 @@ class Level:
 		# Advance to next day in learning system
 		self.learning_system.advance_day()
 		self.learning_system.clear_daily_log()
-		
+
+		# FEATURE: Sleep Penalty
+		if not self.player.sleep:
+			# Player did not sleep manually -> Passed out
+			self.player.fatigue += 1
+			self.learning_system.add_notification("😴 fatigue (+1)")
+		else:
+			# Player slept -> Recover
+			self.player.fatigue = max(0, self.player.fatigue - 1)
+			self.player.sleep = False # Reset flag
+
 		# plants
 		self.soil_layer.update_plants()
 
@@ -200,8 +210,8 @@ class Level:
 		self._sync_weather()
 		if self.raining:
 			self.soil_layer.water_all()
-			# Collect rainwater into player's reserve
-			self.player.collect_rainwater(5)
+			# Collect rainwater into player's reserve AND tank
+			self.player.collect_rainwater(10)
 		
 		# Auto-save after day transition (update trees first)
 		# Regrow trees logic

@@ -3,6 +3,8 @@ from settings import *
 from support import *
 from timer import Timer
 from knowledge_base import FERTILIZER_DATA, IRRIGATION_DATA, INITIAL_WATER_RESERVE, MAX_WATER_RESERVE
+from rainwater import RainTank
+from inventory import get_item_category
 
 class Player(pygame.sprite.Sprite):
 	def __init__(self, pos, group, collision_sprites, tree_sprites, interaction, soil_layer, toggle_shop):
@@ -20,7 +22,8 @@ class Player(pygame.sprite.Sprite):
 		# movement attributes
 		self.direction = pygame.math.Vector2()
 		self.pos = pygame.math.Vector2(self.rect.center)
-		self.speed = 200
+		self.base_speed = 200
+		self.speed = self.base_speed
 
 		# collision
 		self.hitbox = self.rect.copy().inflate((-126,-70))
@@ -35,6 +38,8 @@ class Player(pygame.sprite.Sprite):
 			'fertilizer use': Timer(350, self.use_fertilizer),
 			'fertilizer switch': Timer(200),
 			'irrigation switch': Timer(200),
+			'equipment place': Timer(350, self.place_equipment),
+			'equipment switch': Timer(200),
 		}
 
 		# tools 
@@ -87,7 +92,20 @@ class Player(pygame.sprite.Sprite):
 		
 		# Water reserve (for rainwater collection)
 		self.water_reserve = INITIAL_WATER_RESERVE
-		self.max_water_reserve = MAX_WATER_RESERVE
+		self.base_max_water_reserve = MAX_WATER_RESERVE
+		self.max_water_reserve = self.base_max_water_reserve
+		
+	# FEATURE: Rainwater Harvesting Tank
+		self.rain_tank = RainTank(capacity=100)
+		
+		# FEATURE: Placeable Equipment
+		self.equipment_inventory = {
+			'drip_emitter': 0,
+			'water_tank': 0
+		}
+		self.equipment_types = ['drip_emitter', 'water_tank']
+		self.equipment_index = 0
+		self.selected_equipment = self.equipment_types[self.equipment_index]
 		
 		self.money = 200
 
@@ -100,6 +118,9 @@ class Player(pygame.sprite.Sprite):
 		
 		# Learning system reference (set by Level)
 		self.learning_system = None
+		
+		# Fatigue System (Sleep Penalty)
+		self.fatigue = 0 # 0 = rested, >0 = tired
 
 		# sound
 		self.watering = pygame.mixer.Sound('./audio/water.mp3')
@@ -118,11 +139,27 @@ class Player(pygame.sprite.Sprite):
 			# Get water cost based on irrigation mode
 			water_cost = IRRIGATION_DATA[self.selected_irrigation]['water_cost']
 			
-			# Check if player has enough water
-			if self.water_reserve >= water_cost:
-				self.water_reserve -= water_cost
+			# FEATURE: Rainwater Harvesting
+			# Try to use rain tank first
+			used_rain_tank = False
+			if self.rain_tank.use_water(water_cost):
+				used_rain_tank = True
+				if self.learning_system:
+					# Bonus score for using rainwater?
+					pass
+			
+			# If rain tank didn't have enough, check main reserve
+			if used_rain_tank or self.water_reserve >= water_cost:
+				if not used_rain_tank:
+					self.water_reserve -= water_cost
+				
 				self.soil_layer.water(self.target_pos)
 				self.watering.play()
+				
+				# Feedback about source
+				if self.learning_system and used_rain_tank:
+					# Maybe too spammy to notify every time, but specific to feature
+					pass
 			else:
 				# Alert: no water
 				if self.learning_system:
@@ -148,7 +185,7 @@ class Player(pygame.sprite.Sprite):
 				self.fertilizer_inventory[self.selected_fertilizer] -= 1
 				
 				# Track for achievements
-				if self.learning_system and self.selected_fertilizer == 'organic':
+				if self.learning_system and self.selected_fertilizer in ['compost', 'bone_meal', 'fish_emulsion', 'blood_meal', 'wood_ash']:
 					self.learning_system.organic_fertilizer_count += 1
 		else:
 			# Alert: no fertilizer
@@ -156,11 +193,47 @@ class Player(pygame.sprite.Sprite):
 				fert_name = FERTILIZER_DATA[self.selected_fertilizer]['name']
 				self.learning_system.add_notification(f"No {fert_name}!")
 	
+	def place_equipment(self):
+		"""Place selected equipment in the world"""
+		from knowledge_base import EQUIPMENT_DATA
+		
+		equip_type = self.selected_equipment
+		if self.equipment_inventory.get(equip_type, 0) <= 0:
+			if self.learning_system:
+				equip_name = EQUIPMENT_DATA[equip_type]['name']
+				self.learning_system.add_notification(f"No {equip_name} in inventory!")
+			return
+		
+		equip_data = EQUIPMENT_DATA[equip_type]
+		
+		if equip_type == 'drip_emitter':
+			# Place on soil tile
+			if self.soil_layer.place_drip_emitter(self.target_pos):
+				self.equipment_inventory[equip_type] -= 1
+				if self.learning_system:
+					self.learning_system.add_notification("🌊 Drip emitter placed!")
+			else:
+				if self.learning_system:
+					self.learning_system.add_notification("Can only place on tilled soil!")
+		
+		elif equip_type == 'water_tank':
+			# Place in world - handled by level callback
+			if hasattr(self, 'place_tank_callback') and self.place_tank_callback:
+				self.place_tank_callback(self.target_pos)
+				self.equipment_inventory[equip_type] -= 1
+				if self.learning_system:
+					self.learning_system.add_notification("💧 Water tank placed!")
+	
 	def collect_rainwater(self, amount=5):
 		"""Collect rainwater into reserve (called on rainy days)"""
+		# Fill rain tank first
+		collected = self.rain_tank.collect_rain(amount * 2) # Tank collects more efficiently
+		
+		# Also fill handheld reserve some amount
 		self.water_reserve = min(self.max_water_reserve, self.water_reserve + amount)
+		
 		if self.learning_system:
-			self.learning_system.add_notification(f"💧 Collected rainwater (+{amount})")
+			self.learning_system.add_notification(f"💧 Rain Tank filled: {int(self.rain_tank.get_fill_percentage()*100)}%")
 	
 	def get_unlocked_irrigation_modes(self):
 		"""Get list of irrigation modes available based on skills"""
@@ -190,6 +263,30 @@ class Player(pygame.sprite.Sprite):
 			self.frame_index = 0
 
 		self.image = self.animations[self.status][int(self.frame_index)]
+
+	def apply_skill_effects(self):
+		"""Apply continuous effects from unlocked skills"""
+		if not self.learning_system:
+			return
+			
+		skills = self.learning_system.skill_tree.get_unlocked_skills()
+		
+		# Skill: Faster Movement (Soil Care branch via Sustainable Farming -> Crop Rotation)
+		# Assuming 'Crop Rotation' gives speed boost as per user prompt logic
+		if 'Crop Rotation' in skills:
+			self.speed = self.base_speed * 1.2 # 20% faster
+		else:
+			self.speed = self.base_speed
+			
+		# Apply Fatigue Penalty
+		if self.fatigue > 0:
+			self.speed *= 0.8 # Sluggish
+			
+		# Skill: Increased Water Capacity (Water Management)
+		if 'Water Management' in skills:
+			self.max_water_reserve = self.base_max_water_reserve + 20
+		else:
+			self.max_water_reserve = self.base_max_water_reserve
 
 	def input(self):
 		keys = pygame.key.get_pressed()
@@ -266,6 +363,24 @@ class Player(pygame.sprite.Sprite):
 					if self.learning_system:
 						mode_name = IRRIGATION_DATA[self.selected_irrigation]['name']
 						self.learning_system.add_notification(f"🚿 Switched to {mode_name}")
+			
+			# EQUIPMENT CONTROLS
+			# G key = switch equipment type
+			if keys[pygame.K_g] and not self.timers['equipment switch'].active:
+				self.timers['equipment switch'].activate()
+				self.equipment_index = (self.equipment_index + 1) % len(self.equipment_types)
+				self.selected_equipment = self.equipment_types[self.equipment_index]
+				from knowledge_base import EQUIPMENT_DATA
+				equip_name = EQUIPMENT_DATA[self.selected_equipment]['name']
+				if self.learning_system:
+					count = self.equipment_inventory.get(self.selected_equipment, 0)
+					self.learning_system.add_notification(f"🔧 {equip_name} ({count})")
+			
+			# T key = place equipment
+			if keys[pygame.K_t] and not self.timers['equipment place'].active:
+				self.timers['equipment place'].activate()
+				self.direction = pygame.math.Vector2()
+				self.frame_index = 0
 
 			if keys[pygame.K_RETURN]:
 				collided_interaction_sprite = pygame.sprite.spritecollide(self,self.interaction,False)
@@ -333,6 +448,6 @@ class Player(pygame.sprite.Sprite):
 		self.get_status()
 		self.update_timers()
 		self.get_target_pos()
-
+		self.apply_skill_effects()
 		self.move(dt)
 		self.animate(dt)

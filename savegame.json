@@ -1,34 +1,34 @@
 {
     "player": {
-        "money": 154,
+        "money": 56,
         "item_inventory": {
-            "wood": 22,
-            "apple": 34,
-            "corn": 23,
-            "tomato": 24,
+            "wood": 15,
+            "apple": 41,
+            "corn": 18,
+            "tomato": 18,
             "wheat": 2,
             "carrot": 0,
             "potato": 2
         },
         "seed_inventory": {
-            "corn": 0,
-            "tomato": 0,
-            "wheat": 0,
-            "carrot": 0,
-            "potato": 0
+            "corn": 4,
+            "tomato": 2,
+            "wheat": 2,
+            "carrot": 3,
+            "potato": 4
         },
         "fertilizer_inventory": {
-            "compost": 2,
+            "compost": 0,
             "bone_meal": 0,
             "fish_emulsion": 0,
-            "blood_meal": 0,
+            "blood_meal": 7,
             "wood_ash": 0,
-            "npk_10_10_10": 0,
+            "npk_10_10_10": 5,
             "npk_5_10_10": 0,
             "urea": 0
         },
-        "water_reserve": 17,
-        "selected_tool_index": 2,
+        "water_reserve": 50,
+        "selected_tool_index": 0,
         "selected_seed_index": 0
     },
     "soil": {
@@ -1087,9 +1087,9 @@
                 50,
                 50,
                 50,
-                52,
+                48,
                 50,
-                52,
+                38,
                 50,
                 50,
                 50,
@@ -1508,9 +1508,9 @@
                 50,
                 50,
                 58,
-                65,
+                55,
                 52,
-                58,
+                48,
                 62,
                 62,
                 62,
@@ -1615,7 +1615,7 @@
                 50,
                 50,
                 50,
-                50,
+                60,
                 50,
                 58,
                 50,
@@ -3401,7 +3401,7 @@
                 [
                     "F",
                     "X",
-                    "P"
+                    "X"
                 ],
                 [
                     "F",
@@ -3410,8 +3410,7 @@
                 [
                     "F",
                     "X",
-                    "X",
-                    "P"
+                    "X"
                 ],
                 [
                     "F"
@@ -3607,20 +3606,7 @@
                     "F",
                     "X",
                     "X",
-                    "X",
-                    "W",
-                    "W",
-                    "W",
-                    "W",
-                    "W",
-                    "W",
-                    "W",
-                    "W",
-                    "W",
-                    "W",
-                    "W",
-                    "W",
-                    "W"
+                    "X"
                 ],
                 [],
                 [
@@ -9170,30 +9156,14 @@
                 null
             ]
         ],
-        "plants": [
-            {
-                "x": 15,
-                "y": 20,
-                "type": "corn",
-                "age": 1,
-                "harvestable": false,
-                "unwatered_days": 0
-            },
-            {
-                "x": 13,
-                "y": 20,
-                "type": "corn",
-                "age": 1,
-                "harvestable": false,
-                "unwatered_days": 0
-            }
-        ]
+        "plants": []
     },
     "learning": {
-        "day": 42,
-        "score": 138,
+        "day": 58,
+        "score": 107,
         "daily_actions": [],
         "achievements": [
+            "sustainable_starter",
             "water_saver"
         ],
         "skills": {}

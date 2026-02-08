@@ -19,6 +19,14 @@ class WaterTile(pygame.sprite.Sprite):
 		self.rect = self.image.get_rect(topleft = pos)
 		self.z = LAYERS['soil water']
 
+class DripEmitter(pygame.sprite.Sprite):
+	"""Drip irrigation emitter placed on soil tiles"""
+	def __init__(self, pos, surf, groups):
+		super().__init__(groups)
+		self.image = surf
+		self.rect = self.image.get_rect(topleft = pos)
+		self.z = LAYERS['ground plant']  # Same layer as plants so it overlays nicely
+
 class Plant(pygame.sprite.Sprite):
 	def __init__(self, plant_type, groups, soil, check_watered):
 		super().__init__(groups)
@@ -66,10 +74,23 @@ class SoilLayer:
 		self.soil_sprites = pygame.sprite.Group()
 		self.water_sprites = pygame.sprite.Group()
 		self.plant_sprites = pygame.sprite.Group()
+		self.drip_sprites = pygame.sprite.Group()  # FEATURE: Drip Emitters
 
 		# graphics
 		self.soil_surfs = import_folder_dict('./graphics/soil/')
 		self.water_surfs = import_folder('./graphics/soil_water')
+		
+		# Drip emitter image
+		import os
+		drip_path = './graphics/objects/drip_irrigation.png'
+		if os.path.exists(drip_path):
+			self.drip_surf = pygame.image.load(drip_path).convert_alpha()
+			# Scale to tile size
+			self.drip_surf = pygame.transform.scale(self.drip_surf, (TILE_SIZE, TILE_SIZE))
+		else:
+			# Placeholder
+			self.drip_surf = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
+			pygame.draw.circle(self.drip_surf, (100, 150, 255, 150), (32, 32), 20)
 
 		self.create_soil_grid()
 		self.create_hit_rects()
@@ -104,6 +125,9 @@ class SoilLayer:
 		
 		# 2D Array - Last Crop Grid (for monocropping detection)
 		self.last_crop_grid = [[None for col in range(h_tiles)] for row in range(v_tiles)]
+		
+		# 2D Array - Drip Emitter Grid (tracks placed emitters)
+		self.drip_emitter_grid = [[False for col in range(h_tiles)] for row in range(v_tiles)]
 		
 		for x, y, _ in load_pygame('./data/map.tmx').get_layer_by_name('Farmable').tiles():
 			self.grid[y][x].append('F')
@@ -336,11 +360,40 @@ class SoilLayer:
 	
 	def get_tile_soil_health(self, pos):
 		"""Get soil health at a specific position"""
-		x = pos[0] // TILE_SIZE
-		y = pos[1] // TILE_SIZE
+		x = int(pos[0] // TILE_SIZE)
+		y = int(pos[1] // TILE_SIZE)
 		if 0 <= x < self.grid_width and 0 <= y < self.grid_height:
 			return self.soil_health_grid[y][x]
 		return INITIAL_SOIL_HEALTH
+	
+	def place_drip_emitter(self, target_pos):
+		"""Place a drip emitter on a tilled soil tile"""
+		for soil_sprite in self.soil_sprites.sprites():
+			if soil_sprite.rect.collidepoint(target_pos):
+				x = soil_sprite.rect.x // TILE_SIZE
+				y = soil_sprite.rect.y // TILE_SIZE
+				
+				# Check if already has emitter
+				if self.drip_emitter_grid[y][x]:
+					return False
+				
+				# Place emitter
+				self.drip_emitter_grid[y][x] = True
+				DripEmitter(
+					pos=(soil_sprite.rect.x, soil_sprite.rect.y),
+					surf=self.drip_surf,
+					groups=[self.all_sprites, self.drip_sprites]
+				)
+				return True
+		return False
+	
+	def has_drip_emitter(self, pos):
+		"""Check if tile has a drip emitter"""
+		x = int(pos[0] // TILE_SIZE)
+		y = int(pos[1] // TILE_SIZE)
+		if 0 <= x < self.grid_width and 0 <= y < self.grid_height:
+			return self.drip_emitter_grid[y][x]
+		return False
 	
 	def calculate_yield_modifier(self, pos):
 		"""Calculate yield modifier based on soil health at position"""

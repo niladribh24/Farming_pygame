@@ -364,3 +364,25 @@ IRRIGATION_DATA = {
     }
 }
 
+# ==============================================================================
+# PLACEABLE EQUIPMENT
+# Items that can be bought and placed in the field
+# ==============================================================================
+EQUIPMENT_DATA = {
+    "drip_emitter": {
+        "name": "Drip Emitter",
+        "cost": 25,
+        "unlock_skill": "Drip Irrigation",  # Must have skill unlocked
+        "description": "Reduces water usage on this tile by 50%",
+        "effect": {"water_cost_reduction": 0.5},
+        "placeable_on": "soil"  # Can only be placed on tilled soil
+    },
+    "water_tank": {
+        "name": "Water Tank",
+        "cost": 50,
+        "unlock_skill": None,  # Always available
+        "description": "Collects +15 rainwater when raining",
+        "effect": {"rain_collection": 15},
+        "placeable_on": "ground"  # Placed anywhere
+    }
+}

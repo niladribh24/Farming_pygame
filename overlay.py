@@ -2,6 +2,7 @@ import pygame
 import os
 from settings import *
 from knowledge_base import IRRIGATION_DATA
+from inventory import get_item_category
 
 class Overlay:
 	def __init__(self, player):
@@ -61,74 +62,79 @@ class Overlay:
 		self.display_fertilizer()
 		self.display_water_reserve()
 		self.display_irrigation_mode()
-		self.display_trader_hint()
+
 		self.display_notifications()
+		self.display_shop_prompt()
 	
-	def display_trader_hint(self):
-		"""Show speech bubble when player is near trader"""
-		if not hasattr(self, 'interaction_sprites') or not self.interaction_sprites:
+	def display_shop_prompt(self):
+		"""Display welcome message when near shop"""
+		# Find trader interaction
+		if not hasattr(self, 'interaction_sprites'):
 			return
-		
-		# Check if player is near trader
-		for sprite in self.interaction_sprites.sprites():
-			if hasattr(sprite, 'name') and sprite.name == 'Trader':
-				# Calculate distance to player
-				player_pos = self.player.rect.center
-				trader_pos = sprite.rect.center
-				distance = ((player_pos[0] - trader_pos[0])**2 + (player_pos[1] - trader_pos[1])**2)**0.5
-				
-				if distance < 100:  # Within 100 pixels
-					# Calculate screen position relative to player (camera center)
+			
+		for interaction in self.interaction_sprites.sprites():
+			if interaction.name == 'Trader':
+				# Check distance
+				dist = pygame.math.Vector2(interaction.rect.center) - pygame.math.Vector2(self.player.rect.center)
+				if dist.magnitude() < 150:
+					# Calculate camera offset (same as CameraGroup)
 					offset_x = self.player.rect.centerx - SCREEN_WIDTH / 2
 					offset_y = self.player.rect.centery - SCREEN_HEIGHT / 2
 					
-					screen_x = sprite.rect.centerx - offset_x - 100  # -100 to center bubble (width 200)
-					screen_y = sprite.rect.top - offset_y - 70      # Above head
+					# Convert world position to screen position
+					screen_x = interaction.rect.centerx - offset_x
+					screen_y = interaction.rect.top - offset_y
 					
-					self._draw_speech_bubble(
-						"Hi! Welcome to the shop!",
-						"Press ENTER to trade",
-						screen_x,
-						screen_y
-					)
-					break
-	
-	def _draw_speech_bubble(self, line1, line2, x, y):
-		"""Draw a speech bubble at screen position"""
-		# x, y are already converted to screen coordinates
-		
-		bubble_width = 200
-		bubble_height = 50
-		
-		# Bubble background
-		bubble_rect = pygame.Rect(x, y, bubble_width, bubble_height)
-		pygame.draw.rect(self.display_surface, (255, 255, 255), bubble_rect, 0, 8)
-		pygame.draw.rect(self.display_surface, (80, 80, 80), bubble_rect, 2, 8)
-		
-		# Bubble tail
-		pygame.draw.polygon(self.display_surface, (255, 255, 255), [
-			(x + bubble_width//2 - 10, y + bubble_height),
-			(x + bubble_width//2 + 10, y + bubble_height),
-			(x + bubble_width//2, y + bubble_height + 12)
-		])
-		
-		# Text
-		font = self.small_font
-		text1 = font.render(line1, False, (50, 50, 50))
-		text2 = font.render(line2, False, (100, 100, 100))
-		self.display_surface.blit(text1, (x + 10, y + 8))
-		self.display_surface.blit(text2, (x + 10, y + 28))
-	
+					# Dimensions
+					rect_width = 280
+					rect_height = 70
+					rect_x = screen_x - rect_width // 2
+					rect_y = screen_y - 90
+					
+					bg_color = 'White'
+					border_color = 'Black'
+					
+					# Draw speech bubble tail (triangle pointing down)
+					tail_points = [
+						(screen_x - 10, rect_y + rect_height - 2),
+						(screen_x + 10, rect_y + rect_height - 2),
+						(screen_x, rect_y + rect_height + 15)
+					]
+					pygame.draw.polygon(self.display_surface, bg_color, tail_points)
+					pygame.draw.polygon(self.display_surface, border_color, tail_points, 2)
+					
+					# Draw speech bubble body
+					rect = pygame.Rect(rect_x, rect_y, rect_width, rect_height)
+					pygame.draw.rect(self.display_surface, bg_color, rect, 0, 8)
+					pygame.draw.rect(self.display_surface, border_color, rect, 2, 8)
+					
+					# Cover the line between box and tail
+					cover_rect = pygame.Rect(screen_x - 8, rect_y + rect_height - 3, 16, 6)
+					pygame.draw.rect(self.display_surface, bg_color, cover_rect)
+
+					# Text Line 1 (Black)
+					text_surf1 = self.font.render("Hi! Welcome to the shop!", False, 'Black')
+					text_rect1 = text_surf1.get_rect(midtop=(rect.centerx, rect.top + 12))
+					self.display_surface.blit(text_surf1, text_rect1)
+					
+					# Text Line 2 (Grey)
+					text_surf2 = self.font.render("PRESS ENTER to trade", False, (100, 100, 100))
+					text_rect2 = text_surf2.get_rect(midtop=(rect.centerx, rect.top + 38))
+					self.display_surface.blit(text_surf2, text_rect2)
+					
+					return # Only one trader	
 	def display_soil_health(self):
-		"""Display soil health bar in top-right corner"""
+		"""Display soil health bar for the TARGETED TILE in top-right corner"""
 		if not self.soil_layer:
 			return
 			
-		# Get average soil health
-		health = self.soil_layer.get_average_soil_health()
+		# Get health of the specific tile the player is facing
+		# This gives immediate feedback for actions like fertilizing
+		target_pos = self.player.target_pos
+		health = self.soil_layer.get_tile_soil_health(target_pos)
 		
 		# Draw label
-		label = self.font.render('Soil Health', False, 'White')
+		label = self.font.render('Tile Health', False, 'White')
 		label_rect = label.get_rect(topleft=SOIL_HEALTH_BAR_POS)
 		self.display_surface.blit(label, label_rect)
 		
@@ -212,15 +218,20 @@ class Overlay:
 		fert_type = self.player.selected_fertilizer
 		fert_count = self.player.fertilizer_inventory.get(fert_type, 0)
 		
+		# determine color based on type (just organic/chemical via simple check)
+		# NO EXPLICIT LABELS
+		# User requested uniform color
+		
 		# Icon based on type
-		icon = '🌿' if fert_type == 'organic' else '⚗️'
-		color = (100, 200, 100) if fert_type == 'organic' else (200, 100, 100)
+		icon = '🌿' if fert_type in ['compost', 'bone_meal', 'fish_emulsion', 'blood_meal', 'wood_ash'] else '⚗️'
+		color = (255, 255, 255) # White for all
 		
 		fert_text = self.small_font.render(f'{icon} {fert_type.title()}: {fert_count}', False, color)
 		fert_rect = fert_text.get_rect(topleft=(20, 60))
 		
 		# Background
 		bg_rect = fert_rect.inflate(10, 6)
+			
 		pygame.draw.rect(self.display_surface, (0, 0, 0, 150), bg_rect, 0, 4)
 		self.display_surface.blit(fert_text, fert_rect)
 	
@@ -315,42 +326,3 @@ class Overlay:
 		# Limit number of visible notifications
 		if len(self.notifications) > 5:
 			self.notifications.pop(0)
-	
-	def show_day_summary(self, summary_text):
-		"""Display end-of-day summary panel"""
-		# Semi-transparent overlay
-		overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-		overlay.fill((0, 0, 0, 200))
-		self.display_surface.blit(overlay, (0, 0))
-		
-		# Summary panel
-		panel_width = 500
-		panel_height = 400
-		panel_x = (SCREEN_WIDTH - panel_width) // 2
-		panel_y = (SCREEN_HEIGHT - panel_height) // 2
-		
-		# Panel background
-		pygame.draw.rect(self.display_surface, (40, 40, 60),
-			(panel_x, panel_y, panel_width, panel_height), 0, 10)
-		pygame.draw.rect(self.display_surface, (100, 100, 140),
-			(panel_x, panel_y, panel_width, panel_height), 3, 10)
-		
-		# Render summary text
-		lines = summary_text.split('\n')
-		y = panel_y + 20
-		for line in lines:
-			if '═' in line:
-				# Divider line
-				pygame.draw.line(self.display_surface, (100, 100, 140),
-					(panel_x + 20, y + 10), (panel_x + panel_width - 20, y + 10), 2)
-				y += 25
-			else:
-				text_surf = self.small_font.render(line, False, 'White')
-				text_rect = text_surf.get_rect(midleft=(panel_x + 30, y + 10))
-				self.display_surface.blit(text_surf, text_rect)
-				y += 25
-		
-		# Continue instruction
-		continue_text = self.font.render('Press SPACE to continue...', False, (200, 200, 200))
-		continue_rect = continue_text.get_rect(center=(SCREEN_WIDTH // 2, panel_y + panel_height - 30))
-		self.display_surface.blit(continue_text, continue_rect)
