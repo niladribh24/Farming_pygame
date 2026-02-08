@@ -360,7 +360,14 @@ class Menu:
             if self.quiz_active:
                 if self.quiz_complete:
                     if keys[pygame.K_SPACE] or keys[pygame.K_RETURN]:
+                        # Reset all quiz state when exiting
                         self.quiz_active = False
+                        self.quiz_complete = False
+                        self.quiz_question_index = 0
+                        self.quiz_score = 0
+                        self.quiz_feedback = ""
+                        # Use longer timer to prevent immediate re-trigger
+                        self.timer = Timer(500)
                         self.timer.activate()
                     return
 
@@ -461,11 +468,19 @@ class Menu:
                          elif action == 'buy_equip':
                             price = self._get_item_details(action, item)[2]
                             equip_data = EQUIPMENT_DATA.get(item, {})
+                            unlock_badge = equip_data.get('unlock_badge')
                             unlock_skill = equip_data.get('unlock_skill')
                             
-                            # Check skill requirement
+                            # Check badge or skill requirement
                             can_buy = True
-                            if unlock_skill and self.player.learning_system:
+                            
+                            # Check badge requirement first (from quiz)
+                            if unlock_badge:
+                                if not has_badge(unlock_badge):
+                                    can_buy = False
+                                    self.notifications.append((f"🔒 Requires {unlock_badge} badge!", pygame.time.get_ticks()))
+                            # Then check skill requirement
+                            elif unlock_skill and self.player.learning_system:
                                 skills = self.player.learning_system.skill_tree.get_unlocked_skills()
                                 if unlock_skill not in skills:
                                     can_buy = False

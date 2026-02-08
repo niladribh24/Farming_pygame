@@ -80,17 +80,35 @@ class SoilLayer:
 		self.soil_surfs = import_folder_dict('./graphics/soil/')
 		self.water_surfs = import_folder('./graphics/soil_water')
 		
-		# Drip emitter image
-		import os
-		drip_path = './graphics/objects/drip_irrigation.png'
-		if os.path.exists(drip_path):
-			self.drip_surf = pygame.image.load(drip_path).convert_alpha()
-			# Scale to tile size
-			self.drip_surf = pygame.transform.scale(self.drip_surf, (TILE_SIZE, TILE_SIZE))
-		else:
-			# Placeholder
-			self.drip_surf = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
-			pygame.draw.circle(self.drip_surf, (100, 150, 255, 150), (32, 32), 20)
+		# Drip emitter image - 2x2 tiles (Procedural Generation)
+		# Drip size: 2x2 tiles = 128x128 pixels
+		drip_size = TILE_SIZE * 2
+		
+		# Create surface with alpha channel and fill with transparent
+		self.drip_surf = pygame.Surface((drip_size, drip_size), pygame.SRCALPHA)
+		self.drip_surf.fill((0,0,0,0)) # Explicitly clear to transparent
+		
+		# Draw Pipe Grid Visual
+		# Outer frame (pipes)
+		color = (80, 80, 80) # Dark gray pipe
+		width = 6
+		pygame.draw.rect(self.drip_surf, color, (10, 10, drip_size-20, drip_size-20), width, 5)
+		
+		# Inner cross pipes
+		pygame.draw.line(self.drip_surf, color, (drip_size//2, 10), (drip_size//2, drip_size-10), width)
+		pygame.draw.line(self.drip_surf, color, (10, drip_size//2), (drip_size-10, drip_size//2), width)
+		
+		# Emitter nodes (blue dots)
+		emitter_color = (100, 200, 255)
+		centers = [
+			(drip_size//4 + 2, drip_size//4 + 2),
+			(drip_size*3//4 - 2, drip_size//4 + 2),
+			(drip_size//4 + 2, drip_size*3//4 - 2),
+			(drip_size*3//4 - 2, drip_size*3//4 - 2)
+		]
+		for center in centers:
+			pygame.draw.circle(self.drip_surf, emitter_color, center, 6)
+			pygame.draw.circle(self.drip_surf, (50, 50, 50), center, 6, 1)
 
 		self.create_soil_grid()
 		self.create_hit_rects()
@@ -367,18 +385,36 @@ class SoilLayer:
 		return INITIAL_SOIL_HEALTH
 	
 	def place_drip_emitter(self, target_pos):
-		"""Place a drip emitter on a tilled soil tile"""
+		"""Place a drip emitter covering 2x2 soil tiles"""
 		for soil_sprite in self.soil_sprites.sprites():
 			if soil_sprite.rect.collidepoint(target_pos):
 				x = soil_sprite.rect.x // TILE_SIZE
 				y = soil_sprite.rect.y // TILE_SIZE
 				
-				# Check if already has emitter
-				if self.drip_emitter_grid[y][x]:
+				# Check bounds for 2x2 area
+				if x + 1 >= self.grid_width or y + 1 >= self.grid_height:
+					return False
+				
+				# Check if all 4 tiles are farmable soil ('F')
+				if ('F' not in self.grid[y][x] or 
+					'F' not in self.grid[y][x+1] or 
+					'F' not in self.grid[y+1][x] or 
+					'F' not in self.grid[y+1][x+1]):
+					return False
+				
+				# Check if area is clear of existing emitters
+				if (self.drip_emitter_grid[y][x] or 
+					self.drip_emitter_grid[y][x+1] or 
+					self.drip_emitter_grid[y+1][x] or 
+					self.drip_emitter_grid[y+1][x+1]):
 					return False
 				
 				# Place emitter
 				self.drip_emitter_grid[y][x] = True
+				self.drip_emitter_grid[y][x+1] = True
+				self.drip_emitter_grid[y+1][x] = True
+				self.drip_emitter_grid[y+1][x+1] = True
+				
 				DripEmitter(
 					pos=(soil_sprite.rect.x, soil_sprite.rect.y),
 					surf=self.drip_surf,

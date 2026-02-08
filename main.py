@@ -13,13 +13,16 @@ class Game:
 
 	def run(self):
 		while True:
-			for event in pygame.event.get():
+			events = pygame.event.get()
+			for event in events:
 				if event.type == pygame.QUIT:
+					# Save before exit
+					self.level.save()
 					pygame.quit()
 					sys.exit()
   
 			dt = self.clock.tick() / 1000
-			self.level.run(dt)
+			self.level.run(dt, events)
             
 			# Check for game reset
 			if getattr(self.level, 'reset_pending', False):

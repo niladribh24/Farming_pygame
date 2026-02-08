@@ -372,7 +372,7 @@ EQUIPMENT_DATA = {
     "drip_emitter": {
         "name": "Drip Emitter",
         "cost": 25,
-        "unlock_skill": "Drip Irrigation",  # Must have skill unlocked
+        "unlock_badge": "Water Saver",  # Requires Water Saver badge from quiz
         "description": "Reduces water usage on this tile by 50%",
         "effect": {"water_cost_reduction": 0.5},
         "placeable_on": "soil"  # Can only be placed on tilled soil

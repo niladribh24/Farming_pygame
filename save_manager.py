@@ -1,12 +1,13 @@
 import json
 import os
 import pygame
+from quiz_system import earned_badges
 
 class SaveManager:
     def __init__(self, filename='savegame.json'):
         self.filename = filename
 
-    def save_game(self, player, soil_layer, learning_system, trees=None):
+    def save_game(self, player, soil_layer, learning_system, trees=None, water_tanks=None):
         """Save game state to JSON file"""
         
         # 1. Player Data
@@ -15,7 +16,9 @@ class SaveManager:
             'item_inventory': player.item_inventory,
             'seed_inventory': player.seed_inventory,
             'fertilizer_inventory': player.fertilizer_inventory,
+            'equipment_inventory': getattr(player, 'equipment_inventory', {}),
             'water_reserve': player.water_reserve,
+            'max_water_reserve': getattr(player, 'max_water_reserve', 100),
             'selected_tool_index': player.tool_index,
             'selected_seed_index': player.seed_index
         }
@@ -88,12 +91,27 @@ class SaveManager:
                      'timer': tree.respawn_timer
                  })
 
+        # 5. Water Tank Data
+        tank_data = []
+        if water_tanks:
+            print(f"Saving {len(water_tanks)} water tanks...")
+            for tank in water_tanks:
+                tank_data.append({
+                    'x': tank.rect.x,
+                    'y': tank.rect.y
+                })
+
+        # 5. Quiz Badges (Set)
+        badges_data = list(earned_badges)
+
         # Master Save Data
         save_data = {
             'player': player_data,
             'soil': soil_data,
             'learning': learning_data,
-            'trees': tree_data
+            'trees': tree_data,
+            'badges': badges_data,
+            'water_tanks': tank_data
         }
 
         with open(self.filename, 'w') as f:
@@ -101,7 +119,7 @@ class SaveManager:
         
         print("Game Saved!")
 
-    def load_game(self, player, soil_layer, learning_system, trees=None):
+    def load_game(self, player, soil_layer, learning_system, trees=None, water_tanks=None):
         """Load game state from JSON file"""
         if not os.path.exists(self.filename):
             print("No save file found.")
@@ -117,7 +135,9 @@ class SaveManager:
             player.item_inventory = p_data.get('item_inventory', player.item_inventory)
             player.seed_inventory = p_data.get('seed_inventory', player.seed_inventory)
             player.fertilizer_inventory = p_data.get('fertilizer_inventory', player.fertilizer_inventory)
+            player.equipment_inventory = p_data.get('equipment_inventory', {})
             player.water_reserve = p_data.get('water_reserve', 0)
+            player.max_water_reserve = p_data.get('max_water_reserve', 100)
 
             # 2. Load Learning System
             l_data = data.get('learning', {})
@@ -126,9 +146,12 @@ class SaveManager:
             learning_system.daily_actions = l_data.get('daily_actions', [])
             if 'achievements' in l_data:
                 learning_system.achievements = set(l_data['achievements'])
-            # Skills loading would be complex, mostly just need to mark unlocked ones
-            # For now, let's trust the achievement/score based unlocks or save skill status explicitly?
-            # Implemented simple skill load if structure permits.
+            
+            # Load Quiz Badges
+            if 'badges' in data:
+                earned_badges.clear()
+                for badge in data['badges']:
+                    earned_badges.add(badge)
 
             # 3. Load Soil/Plants
             s_data = data.get('soil', {})
@@ -187,6 +210,22 @@ class SaveManager:
                         # soil_layer.plant_seed does checks, we just want to force plant.
                         # force plant creation
                         plant = soil_layer._force_plant(found_tile, p_info['type'],  p_info['age'], p_info['harvestable'], p_info.get('unwatered_days', 0))
+            
+            # 4. Load Water Tanks
+            tank_list = data.get('water_tanks', [])
+            if water_tanks is not None:
+                # Clear existing
+                water_tanks.empty()
+                from equipment import PlacedWaterTank
+                print(f"Loading {len(tank_list)} water tanks...")
+                for t in tank_list:
+                    print(f" - Restoring tank at ({t['x']}, {t['y']})")
+                    # Pass collision_groups explicitly as 3rd arg
+                    PlacedWaterTank((t['x'], t['y']), [water_tanks, soil_layer.all_sprites], [soil_layer.collision_sprites])
+                
+                # Recalculate player bonus from tanks
+                player.water_tank_bonus = len(water_tanks) * 20
+                player.apply_skill_effects() # Force update max_water_reserve
             
             print("Game Loaded!")
             

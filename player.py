@@ -93,7 +93,10 @@ class Player(pygame.sprite.Sprite):
 		# Water reserve (for rainwater collection)
 		self.water_reserve = INITIAL_WATER_RESERVE
 		self.base_max_water_reserve = MAX_WATER_RESERVE
+		self.water_reserve = INITIAL_WATER_RESERVE
+		self.base_max_water_reserve = MAX_WATER_RESERVE
 		self.max_water_reserve = self.base_max_water_reserve
+		self.water_tank_bonus = 0 # Updates from placed water tanks
 		
 	# FEATURE: Rainwater Harvesting Tank
 		self.rain_tank = RainTank(capacity=100)
@@ -283,10 +286,10 @@ class Player(pygame.sprite.Sprite):
 			self.speed *= 0.8 # Sluggish
 			
 		# Skill: Increased Water Capacity (Water Management)
-		if 'Water Management' in skills:
-			self.max_water_reserve = self.base_max_water_reserve + 20
-		else:
-			self.max_water_reserve = self.base_max_water_reserve
+		skill_bonus = 20 if 'Water Management' in skills else 0
+		
+		# Total Max Water = Base + Skill + Tank Bonus
+		self.max_water_reserve = self.base_max_water_reserve + skill_bonus + getattr(self, 'water_tank_bonus', 0)
 
 	def input(self):
 		keys = pygame.key.get_pressed()

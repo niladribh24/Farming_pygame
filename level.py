@@ -11,9 +11,12 @@ from sky import Rain, Sky
 from random import randint
 from menu import Menu
 from learning_system import LearningSystem
+from knowledge_base import MAX_WATER_RESERVE
 from book_ui import get_knowledge_book
 from settings_menu import get_settings_menu
+from equipment import PlacedWaterTank
 from save_manager import SaveManager
+from inventory import get_inventory
 
 class Level:
 	def __init__(self):
@@ -29,6 +32,7 @@ class Level:
 		self.collision_sprites = pygame.sprite.Group()
 		self.tree_sprites = pygame.sprite.Group()
 		self.interaction_sprites = pygame.sprite.Group()
+		self.water_tank_sprites = pygame.sprite.Group()  # FEATURE: Placed water tanks
 
 		self.soil_layer = SoilLayer(self.all_sprites, self.collision_sprites)
 		self.setup()
@@ -42,6 +46,9 @@ class Level:
 		self.overlay.soil_layer = self.soil_layer
 		self.overlay.interaction_sprites = self.interaction_sprites
 		self.player.learning_system = self.learning_system
+		
+		# Connect water tank placement callback
+		self.player.place_tank_callback = self.place_water_tank
 		
 		# Day summary state
 		self.showing_summary = False
@@ -66,13 +73,17 @@ class Level:
 		
 		# Knowledge book
 		self.knowledge_book = get_knowledge_book()
+		
+		# Inventory system
+		self.inventory = get_inventory(self.player)
+		self.inventory_toggle_timer = pygame.time.get_ticks()
 		self.book_toggle_timer = pygame.time.get_ticks()
 
 		# music
 		self.success = pygame.mixer.Sound('./audio/success.wav')
 		self.success.set_volume(0.3)
 		self.music = pygame.mixer.Sound('./audio/music.mp3')
-		self.music.set_volume(0.3)  # Initial volume
+		self.music.set_volume(0)  # Initial volume (muted by default)
 		self.music.play(loops = -1)
 		
 		# Settings menu (created after music so it can control volume)
@@ -83,7 +94,7 @@ class Level:
 		self.save_manager = SaveManager()
 		try:
 			# Pass tree sprites to load their state
-			self.save_manager.load_game(self.player, self.soil_layer, self.learning_system, self.tree_sprites)
+			self.save_manager.load_game(self.player, self.soil_layer, self.learning_system, self.tree_sprites, water_tanks=self.water_tank_sprites)
 			
 			# Re-sync weather and water after load (in case save was rainy)
 			self._sync_weather()
@@ -170,6 +181,26 @@ class Level:
 	def toggle_shop(self):
 
 		self.shop_active = not self.shop_active
+	
+	def place_water_tank(self, pos):
+		"""Place a water tank in the world at the given position"""
+		# Snap to tile grid
+		x = (int(pos[0]) // TILE_SIZE) * TILE_SIZE
+		y = (int(pos[1]) // TILE_SIZE) * TILE_SIZE
+		
+		# Create the tank sprite with collision
+		PlacedWaterTank(
+			pos=(x, y),
+			groups=[self.all_sprites, self.water_tank_sprites],
+			collision_groups=[self.collision_sprites]
+		)
+		
+		# Increase player's max water capacity by 20 (via bonus)
+		self.player.water_tank_bonus = getattr(self.player, 'water_tank_bonus', 0) + 20
+		
+		# Force update to apply immediately
+		self.player.apply_skill_effects()
+		self.learning_system.add_notification(f"💧 Water capacity +20! (Max: {self.player.max_water_reserve})")
 
 	def reset(self):
 		# LEARNING SYSTEM - End of day processing
@@ -189,17 +220,7 @@ class Level:
 		# Advance to next day in learning system
 		self.learning_system.advance_day()
 		self.learning_system.clear_daily_log()
-
-		# FEATURE: Sleep Penalty
-		if not self.player.sleep:
-			# Player did not sleep manually -> Passed out
-			self.player.fatigue += 1
-			self.learning_system.add_notification("😴 fatigue (+1)")
-		else:
-			# Player slept -> Recover
-			self.player.fatigue = max(0, self.player.fatigue - 1)
-			self.player.sleep = False # Reset flag
-
+		
 		# plants
 		self.soil_layer.update_plants()
 
@@ -210,8 +231,14 @@ class Level:
 		self._sync_weather()
 		if self.raining:
 			self.soil_layer.water_all()
-			# Collect rainwater into player's reserve AND tank
-			self.player.collect_rainwater(10)
+			# Collect rainwater into player's reserve
+			self.player.collect_rainwater(5)
+			
+			# Bonus collection from placed water tanks
+			tank_bonus = len(self.water_tank_sprites.sprites()) * 15
+			if tank_bonus > 0:
+				self.player.rain_tank.collect_rain(tank_bonus)
+				self.learning_system.add_notification(f"💧 Tanks collected +{tank_bonus} water!")
 		
 		# Auto-save after day transition (update trees first)
 		# Regrow trees logic
@@ -226,7 +253,11 @@ class Level:
 				apple.kill()
 			tree.create_fruit()
 
-		self.save_manager.save_game(self.player, self.soil_layer, self.learning_system, self.tree_sprites)
+		self.save_manager.save_game(self.player, self.soil_layer, self.learning_system, self.tree_sprites, water_tanks=self.water_tank_sprites)
+
+	def save(self):
+		"""Public method to trigger save (e.g. on quit)"""
+		self.save_manager.save_game(self.player, self.soil_layer, self.learning_system, self.tree_sprites, water_tanks=self.water_tank_sprites)
 
 		# sky - reset day/night cycle
 		self.sky.reset_cycle()
@@ -249,7 +280,9 @@ class Level:
 					Particle(plant.rect.topleft, plant.image, self.all_sprites, z = LAYERS['main'])
 					self.soil_layer.grid[plant.rect.centery // TILE_SIZE][plant.rect.centerx // TILE_SIZE].remove('P')
 
-	def run(self,dt):
+	def run(self, dt, events=None):
+		if events is None:
+			events = []
 		
 		# drawing logic
 		self.display_surface.fill('black')
@@ -260,13 +293,19 @@ class Level:
 		current_time = pygame.time.get_ticks()
 		
 		# B key to toggle Knowledge Book
-		if keys[pygame.K_b] and not self.player.sleep and not self.shop_active and not self.settings_menu.is_open:
+		if keys[pygame.K_b] and not self.player.sleep and not self.shop_active and not self.settings_menu.is_open and not self.inventory.is_open:
 			if current_time - self.book_toggle_timer > 400:
 				self.knowledge_book.toggle()
 				self.book_toggle_timer = current_time
 		
+		# I key to toggle Inventory
+		if keys[pygame.K_i] and not self.player.sleep and not self.shop_active and not self.settings_menu.is_open and not self.knowledge_book.is_open:
+			if current_time - self.inventory_toggle_timer > 400:
+				self.inventory.toggle()
+				self.inventory_toggle_timer = current_time
+		
 		# P key to toggle Settings Menu
-		if keys[pygame.K_p] and not self.player.sleep and not self.shop_active and not self.knowledge_book.is_open:
+		if keys[pygame.K_p] and not self.player.sleep and not self.shop_active and not self.knowledge_book.is_open and not self.inventory.is_open:
 			if current_time - self.settings_toggle_timer > 400:
 				self.settings_menu.toggle()
 				self.settings_toggle_timer = current_time
@@ -274,6 +313,11 @@ class Level:
 		# Main game state updates
 		if self.settings_menu.is_open:
 			self.settings_menu.update()
+		elif self.inventory.is_open:
+			# Inventory is open - update it and handle text input events
+			for event in events:
+				self.inventory.handle_text_input(event)
+			self.inventory.update()
 		elif self.knowledge_book.is_open:
 			# Book is open - update and display it
 			self.knowledge_book.update()
@@ -299,6 +343,8 @@ class Level:
 		# Draw menus/book LAST so they appear on top of everything
 		if self.settings_menu.is_open:
 			self.settings_menu.display()
+		elif self.inventory.is_open:
+			self.inventory.display()
 		elif self.knowledge_book.is_open:
 			self.knowledge_book.display()
 		elif self.shop_active:
@@ -324,12 +370,3 @@ class CameraGroup(pygame.sprite.Group):
 					offset_rect = sprite.rect.copy()
 					offset_rect.center -= self.offset
 					self.display_surface.blit(sprite.image, offset_rect)
-
-					# # anaytics
-					# if sprite == player:
-					# 	pygame.draw.rect(self.display_surface,'red',offset_rect,5)
-					# 	hitbox_rect = player.hitbox.copy()
-					# 	hitbox_rect.center = offset_rect.center
-					# 	pygame.draw.rect(self.display_surface,'green',hitbox_rect,5)
-					# 	target_pos = offset_rect.center + PLAYER_TOOL_OFFSET[player.status.split('_')[0]]
-					# 	pygame.draw.circle(self.display_surface,'blue',target_pos,5)
