@@ -52,6 +52,7 @@ class SettingsMenu:
             ('R', 'Apply fertilizer'),
             ('O', 'Switch irrigation mode'),
             ('I', 'Open Inventory'),
+            ('T', 'Open Skill Book'),
             ('B', 'Open Knowledge Book'),
             ('P', 'Open Settings'),
             ('Enter', 'Interact (shop/bed)'),

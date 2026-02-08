@@ -17,7 +17,10 @@ class SaveManager:
             'fertilizer_inventory': player.fertilizer_inventory,
             'water_reserve': player.water_reserve,
             'selected_tool_index': player.tool_index,
-            'selected_seed_index': player.seed_index
+            'selected_seed_index': player.seed_index,
+            # Skill levels
+            'water_skill_level': player.water_skill_level,
+            'speed_skill_level': player.speed_skill_level
         }
 
         # 2. Soil/Grid Data
@@ -57,7 +60,9 @@ class SaveManager:
                 'type': plant.plant_type,
                 'age': plant.age,
                 'harvestable': plant.harvestable,
-                'unwatered_days': plant.unwatered_days
+                'unwatered_days': plant.unwatered_days,
+                'fertilized_days': plant.fertilized_days,
+                'total_grow_days': plant.total_grow_days
             })
 
         soil_data = {
@@ -118,6 +123,11 @@ class SaveManager:
             player.seed_inventory = p_data.get('seed_inventory', player.seed_inventory)
             player.fertilizer_inventory = p_data.get('fertilizer_inventory', player.fertilizer_inventory)
             player.water_reserve = p_data.get('water_reserve', 0)
+            
+            # Load skill levels
+            player.water_skill_level = p_data.get('water_skill_level', 0)
+            player.speed_skill_level = p_data.get('speed_skill_level', 0)
+            player._apply_skill_effects()  # Apply skill effects after loading
 
             # 2. Load Learning System
             l_data = data.get('learning', {})
@@ -182,11 +192,12 @@ class SaveManager:
                             break
                     
                     if found_tile:
-                        # Recreate plant
-                        # We need to import Plant here or use soil_layer method if available
-                        # soil_layer.plant_seed does checks, we just want to force plant.
-                        # force plant creation
-                        plant = soil_layer._force_plant(found_tile, p_info['type'],  p_info['age'], p_info['harvestable'], p_info.get('unwatered_days', 0))
+                        # Recreate plant with all data
+                        plant = soil_layer._force_plant(
+                            found_tile, p_info['type'], p_info['age'], 
+                            p_info['harvestable'], p_info.get('unwatered_days', 0),
+                            p_info.get('fertilized_days', 0), p_info.get('total_grow_days', 0)
+                        )
             
             print("Game Loaded!")
             

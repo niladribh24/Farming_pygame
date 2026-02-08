@@ -15,6 +15,7 @@ from book_ui import get_knowledge_book
 from settings_menu import get_settings_menu
 from save_manager import SaveManager
 from inventory import get_inventory
+from skill_tree import get_skill_tree
 
 class Level:
 	def __init__(self):
@@ -72,6 +73,10 @@ class Level:
 		self.inventory = get_inventory(self.player)
 		self.inventory_toggle_timer = pygame.time.get_ticks()
 		self.book_toggle_timer = pygame.time.get_ticks()
+		
+		# Skill tree
+		self.skill_tree = get_skill_tree(self.player)
+		self.skill_tree_toggle_timer = pygame.time.get_ticks()
 
 		# music
 		self.success = pygame.mixer.Sound('./audio/success.wav')
@@ -230,15 +235,20 @@ class Level:
 		if self.soil_layer.plant_sprites:
 			for plant in self.soil_layer.plant_sprites.sprites():
 				if plant.harvestable and plant.rect.colliderect(self.player.hitbox):
-					# Calculate yield based on soil health
-					yield_modifier = self.soil_layer.calculate_yield_modifier(plant.rect.center)
+					# Check for double yield (fertilized majority of growth days)
+					fertilizer_bonus = False
+					if plant.total_grow_days > 0:
+						fertilized_ratio = plant.fertilized_days / plant.total_grow_days
+						if fertilized_ratio >= 0.5:  # 50% or more days fertilized
+							fertilizer_bonus = True
 					
-					# Add to inventory (base + modifier bonus)
+					# Add to inventory (base yield)
 					self.player_add(plant.plant_type)
-					if yield_modifier >= 1.5:
-						# Bonus harvest for healthy soil!
+					
+					# Double yield if fertilized majority of days
+					if fertilizer_bonus:
 						self.player_add(plant.plant_type)
-						self.learning_system.add_notification("🌾 Bonus harvest from healthy soil!")
+						self.learning_system.add_notification("🌾 Double harvest from well-fertilized crop!")
 					
 					plant.kill()
 					Particle(plant.rect.topleft, plant.image, self.all_sprites, z = LAYERS['main'])
@@ -269,14 +279,22 @@ class Level:
 				self.inventory_toggle_timer = current_time
 		
 		# P key to toggle Settings Menu
-		if keys[pygame.K_p] and not self.player.sleep and not self.shop_active and not self.knowledge_book.is_open and not self.inventory.is_open:
+		if keys[pygame.K_p] and not self.player.sleep and not self.shop_active and not self.knowledge_book.is_open and not self.inventory.is_open and not self.skill_tree.is_open:
 			if current_time - self.settings_toggle_timer > 400:
 				self.settings_menu.toggle()
 				self.settings_toggle_timer = current_time
 		
+		# T key to toggle Skill Tree
+		if keys[pygame.K_t] and not self.player.sleep and not self.shop_active and not self.knowledge_book.is_open and not self.inventory.is_open and not self.settings_menu.is_open:
+			if current_time - self.skill_tree_toggle_timer > 400:
+				self.skill_tree.toggle()
+				self.skill_tree_toggle_timer = current_time
+		
 		# Main game state updates
 		if self.settings_menu.is_open:
 			self.settings_menu.update()
+		elif self.skill_tree.is_open:
+			self.skill_tree.update()
 		elif self.inventory.is_open:
 			# Inventory is open - update it and handle text input events
 			for event in events:
@@ -307,6 +325,8 @@ class Level:
 		# Draw menus/book LAST so they appear on top of everything
 		if self.settings_menu.is_open:
 			self.settings_menu.display()
+		elif self.skill_tree.is_open:
+			self.skill_tree.display()
 		elif self.inventory.is_open:
 			self.inventory.display()
 		elif self.knowledge_book.is_open:

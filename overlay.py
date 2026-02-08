@@ -120,15 +120,18 @@ class Overlay:
 		self.display_surface.blit(text2, (x + 10, y + 28))
 	
 	def display_soil_health(self):
-		"""Display soil health bar in top-right corner"""
+		"""Display tile health for the tile the player is standing on"""
 		if not self.soil_layer:
 			return
-			
-		# Get average soil health
-		health = self.soil_layer.get_average_soil_health()
+		
+		# Get player's current position
+		player_pos = self.player.rect.center
+		
+		# Check if player is on a tilled tile
+		is_tilled = self.soil_layer.is_tile_tilled(player_pos)
 		
 		# Draw label
-		label = self.font.render('Soil Health', False, 'White')
+		label = self.font.render('Tile Health', False, 'White')
 		label_rect = label.get_rect(topleft=SOIL_HEALTH_BAR_POS)
 		self.display_surface.blit(label, label_rect)
 		
@@ -142,30 +145,45 @@ class Overlay:
 		pygame.draw.rect(self.display_surface, (50, 50, 50), 
 			(bar_x, bar_y, bar_width, bar_height), 0, 4)
 		
-		# Health fill (color changes based on health)
-		health_percent = health / 100
-		fill_width = int(bar_width * health_percent)
-		
-		# Color gradient: red (low) -> yellow (mid) -> green (high)
-		if health < 30:
-			color = (200, 50, 50)  # Red
-		elif health < 60:
-			color = (200, 200, 50)  # Yellow
+		if is_tilled:
+			# Get tile health
+			health = self.soil_layer.get_tile_soil_health(player_pos)
+			
+			# Health fill (color changes based on health)
+			health_percent = health / 100
+			fill_width = int(bar_width * health_percent)
+			
+			# Color gradient: red (low) -> yellow (mid) -> green (high)
+			if health < 30:
+				color = (200, 50, 50)  # Red
+			elif health < 60:
+				color = (200, 200, 50)  # Yellow
+			else:
+				color = (50, 200, 50)  # Green
+			
+			if fill_width > 0:
+				pygame.draw.rect(self.display_surface, color,
+					(bar_x, bar_y, fill_width, bar_height), 0, 4)
+			
+			# Border
+			pygame.draw.rect(self.display_surface, 'White',
+				(bar_x, bar_y, bar_width, bar_height), 2, 4)
+			
+			# Health value text
+			health_text = self.small_font.render(f'{int(health)}%', False, 'White')
+			health_rect = health_text.get_rect(center=(bar_x + bar_width//2, bar_y + bar_height//2))
+			self.display_surface.blit(health_text, health_rect)
 		else:
-			color = (50, 200, 50)  # Green
-		
-		if fill_width > 0:
-			pygame.draw.rect(self.display_surface, color,
-				(bar_x, bar_y, fill_width, bar_height), 0, 4)
-		
-		# Border
-		pygame.draw.rect(self.display_surface, 'White',
-			(bar_x, bar_y, bar_width, bar_height), 2, 4)
-		
-		# Health value text
-		health_text = self.small_font.render(f'{int(health)}%', False, 'White')
-		health_rect = health_text.get_rect(center=(bar_x + bar_width//2, bar_y + bar_height//2))
-		self.display_surface.blit(health_text, health_rect)
+			# Grass/untilled tile
+			pygame.draw.rect(self.display_surface, (80, 120, 60),
+				(bar_x, bar_y, bar_width, bar_height), 0, 4)
+			pygame.draw.rect(self.display_surface, (100, 150, 80),
+				(bar_x, bar_y, bar_width, bar_height), 2, 4)
+			
+			# Grass text
+			grass_text = self.small_font.render('Grass', False, 'White')
+			grass_rect = grass_text.get_rect(center=(bar_x + bar_width//2, bar_y + bar_height//2))
+			self.display_surface.blit(grass_text, grass_rect)
 	
 	def display_score(self):
 		"""Display current score"""

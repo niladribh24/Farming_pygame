@@ -103,13 +103,13 @@ class Player(pygame.sprite.Sprite):
 		
 		# SKILL SYSTEM
 		# Water skills: affects max_water_reserve
-		self.water_skill_level = 1  # 1, 2, or 3
-		self.water_skill_capacities = {1: 50, 2: 100, 3: 150}
+		self.water_skill_level = 0  # 0 = not unlocked, 1-3 = unlocked levels
+		self.water_skill_capacities = {0: 50, 1: 100, 2: 150, 3: 200}
 		
 		# Speed skills: affects movement speed
-		self.speed_skill_level = 1  # 1, 2, or 3
-		self.base_speed = 200  # Base speed at level 1
-		self.speed_multipliers = {1: 1.0, 2: 1.1, 3: 1.2}  # 100%, 110%, 120%
+		self.speed_skill_level = 0  # 0 = not unlocked, 1-3 = unlocked levels
+		self.base_speed = 200  # Base speed at level 0
+		self.speed_multipliers = {0: 1.0, 1: 1.1, 2: 1.2, 3: 1.3}  # 100%, 110%, 120%, 130%
 		
 		# Apply initial skill effects
 		self._apply_skill_effects()
@@ -288,47 +288,6 @@ class Player(pygame.sprite.Sprite):
 					else:
 						self.status = 'left_idle'
 						self.sleep = True
-			
-			# TEST KEYBINDS FOR SKILLS (temporary for testing)
-			# 1, 2, 3 = Water skill levels
-			if keys[pygame.K_1] and not self.timers['tool switch'].active:
-				self.timers['tool switch'].activate()
-				self.water_skill_level = 1
-				self._apply_skill_effects()
-				if self.learning_system:
-					self.learning_system.add_notification(f"💧 Water Skill 1 (Capacity: 50)")
-			if keys[pygame.K_2] and not self.timers['tool switch'].active:
-				self.timers['tool switch'].activate()
-				self.water_skill_level = 2
-				self._apply_skill_effects()
-				if self.learning_system:
-					self.learning_system.add_notification(f"💧 Water Skill 2 (Capacity: 100)")
-			if keys[pygame.K_3] and not self.timers['tool switch'].active:
-				self.timers['tool switch'].activate()
-				self.water_skill_level = 3
-				self._apply_skill_effects()
-				if self.learning_system:
-					self.learning_system.add_notification(f"💧 Water Skill 3 (Capacity: 150)")
-			
-			# 4, 5, 6 = Speed skill levels
-			if keys[pygame.K_4] and not self.timers['tool switch'].active:
-				self.timers['tool switch'].activate()
-				self.speed_skill_level = 1
-				self._apply_skill_effects()
-				if self.learning_system:
-					self.learning_system.add_notification(f"🏃 Speed Skill 1 (100%)")
-			if keys[pygame.K_5] and not self.timers['tool switch'].active:
-				self.timers['tool switch'].activate()
-				self.speed_skill_level = 2
-				self._apply_skill_effects()
-				if self.learning_system:
-					self.learning_system.add_notification(f"🏃 Speed Skill 2 (110%)")
-			if keys[pygame.K_6] and not self.timers['tool switch'].active:
-				self.timers['tool switch'].activate()
-				self.speed_skill_level = 3
-				self._apply_skill_effects()
-				if self.learning_system:
-					self.learning_system.add_notification(f"🏃 Speed Skill 3 (120%)")
 	
 	def _apply_skill_effects(self):
 		"""Apply skill effects to player stats"""
