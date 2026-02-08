@@ -5,6 +5,7 @@ ideas :
 - soil health bar
 - Skills increase ability (more water capacity, faster movement speed, cheaper prices)
 - Punishment for not sleeping all night
+- Tutorial
 
 DONE :
 - Watering needs water in water gauge

@@ -14,6 +14,7 @@ from learning_system import LearningSystem
 from book_ui import get_knowledge_book
 from settings_menu import get_settings_menu
 from save_manager import SaveManager
+from inventory import get_inventory
 
 class Level:
 	def __init__(self):
@@ -66,13 +67,17 @@ class Level:
 		
 		# Knowledge book
 		self.knowledge_book = get_knowledge_book()
+		
+		# Inventory system
+		self.inventory = get_inventory(self.player)
+		self.inventory_toggle_timer = pygame.time.get_ticks()
 		self.book_toggle_timer = pygame.time.get_ticks()
 
 		# music
 		self.success = pygame.mixer.Sound('./audio/success.wav')
 		self.success.set_volume(0.3)
 		self.music = pygame.mixer.Sound('./audio/music.mp3')
-		self.music.set_volume(0.3)  # Initial volume
+		self.music.set_volume(0)  # Initial volume (muted by default)
 		self.music.play(loops = -1)
 		
 		# Settings menu (created after music so it can control volume)
@@ -239,7 +244,9 @@ class Level:
 					Particle(plant.rect.topleft, plant.image, self.all_sprites, z = LAYERS['main'])
 					self.soil_layer.grid[plant.rect.centery // TILE_SIZE][plant.rect.centerx // TILE_SIZE].remove('P')
 
-	def run(self,dt):
+	def run(self, dt, events=None):
+		if events is None:
+			events = []
 		
 		# drawing logic
 		self.display_surface.fill('black')
@@ -250,13 +257,19 @@ class Level:
 		current_time = pygame.time.get_ticks()
 		
 		# B key to toggle Knowledge Book
-		if keys[pygame.K_b] and not self.player.sleep and not self.shop_active and not self.settings_menu.is_open:
+		if keys[pygame.K_b] and not self.player.sleep and not self.shop_active and not self.settings_menu.is_open and not self.inventory.is_open:
 			if current_time - self.book_toggle_timer > 400:
 				self.knowledge_book.toggle()
 				self.book_toggle_timer = current_time
 		
+		# I key to toggle Inventory
+		if keys[pygame.K_i] and not self.player.sleep and not self.shop_active and not self.settings_menu.is_open and not self.knowledge_book.is_open:
+			if current_time - self.inventory_toggle_timer > 400:
+				self.inventory.toggle()
+				self.inventory_toggle_timer = current_time
+		
 		# P key to toggle Settings Menu
-		if keys[pygame.K_p] and not self.player.sleep and not self.shop_active and not self.knowledge_book.is_open:
+		if keys[pygame.K_p] and not self.player.sleep and not self.shop_active and not self.knowledge_book.is_open and not self.inventory.is_open:
 			if current_time - self.settings_toggle_timer > 400:
 				self.settings_menu.toggle()
 				self.settings_toggle_timer = current_time
@@ -264,6 +277,11 @@ class Level:
 		# Main game state updates
 		if self.settings_menu.is_open:
 			self.settings_menu.update()
+		elif self.inventory.is_open:
+			# Inventory is open - update it and handle text input events
+			for event in events:
+				self.inventory.handle_text_input(event)
+			self.inventory.update()
 		elif self.knowledge_book.is_open:
 			# Book is open - update and display it
 			self.knowledge_book.update()
@@ -289,6 +307,8 @@ class Level:
 		# Draw menus/book LAST so they appear on top of everything
 		if self.settings_menu.is_open:
 			self.settings_menu.display()
+		elif self.inventory.is_open:
+			self.inventory.display()
 		elif self.knowledge_book.is_open:
 			self.knowledge_book.display()
 		elif self.shop_active:

@@ -100,6 +100,19 @@ class Player(pygame.sprite.Sprite):
 		
 		# Learning system reference (set by Level)
 		self.learning_system = None
+		
+		# SKILL SYSTEM
+		# Water skills: affects max_water_reserve
+		self.water_skill_level = 1  # 1, 2, or 3
+		self.water_skill_capacities = {1: 50, 2: 100, 3: 150}
+		
+		# Speed skills: affects movement speed
+		self.speed_skill_level = 1  # 1, 2, or 3
+		self.base_speed = 200  # Base speed at level 1
+		self.speed_multipliers = {1: 1.0, 2: 1.1, 3: 1.2}  # 100%, 110%, 120%
+		
+		# Apply initial skill effects
+		self._apply_skill_effects()
 
 		# sound
 		self.watering = pygame.mixer.Sound('./audio/water.mp3')
@@ -255,8 +268,8 @@ class Player(pygame.sprite.Sprite):
 				self.frame_index = 0
 			
 			# IRRIGATION CONTROLS
-			# I key = switch irrigation mode (only unlocked modes)
-			if keys[pygame.K_i] and not self.timers['irrigation switch'].active:
+			# O key = switch irrigation mode (only unlocked modes)
+			if keys[pygame.K_o] and not self.timers['irrigation switch'].active:
 				self.timers['irrigation switch'].activate()
 				unlocked_modes = self.get_unlocked_irrigation_modes()
 				if len(unlocked_modes) > 1:
@@ -275,6 +288,58 @@ class Player(pygame.sprite.Sprite):
 					else:
 						self.status = 'left_idle'
 						self.sleep = True
+			
+			# TEST KEYBINDS FOR SKILLS (temporary for testing)
+			# 1, 2, 3 = Water skill levels
+			if keys[pygame.K_1] and not self.timers['tool switch'].active:
+				self.timers['tool switch'].activate()
+				self.water_skill_level = 1
+				self._apply_skill_effects()
+				if self.learning_system:
+					self.learning_system.add_notification(f"💧 Water Skill 1 (Capacity: 50)")
+			if keys[pygame.K_2] and not self.timers['tool switch'].active:
+				self.timers['tool switch'].activate()
+				self.water_skill_level = 2
+				self._apply_skill_effects()
+				if self.learning_system:
+					self.learning_system.add_notification(f"💧 Water Skill 2 (Capacity: 100)")
+			if keys[pygame.K_3] and not self.timers['tool switch'].active:
+				self.timers['tool switch'].activate()
+				self.water_skill_level = 3
+				self._apply_skill_effects()
+				if self.learning_system:
+					self.learning_system.add_notification(f"💧 Water Skill 3 (Capacity: 150)")
+			
+			# 4, 5, 6 = Speed skill levels
+			if keys[pygame.K_4] and not self.timers['tool switch'].active:
+				self.timers['tool switch'].activate()
+				self.speed_skill_level = 1
+				self._apply_skill_effects()
+				if self.learning_system:
+					self.learning_system.add_notification(f"🏃 Speed Skill 1 (100%)")
+			if keys[pygame.K_5] and not self.timers['tool switch'].active:
+				self.timers['tool switch'].activate()
+				self.speed_skill_level = 2
+				self._apply_skill_effects()
+				if self.learning_system:
+					self.learning_system.add_notification(f"🏃 Speed Skill 2 (110%)")
+			if keys[pygame.K_6] and not self.timers['tool switch'].active:
+				self.timers['tool switch'].activate()
+				self.speed_skill_level = 3
+				self._apply_skill_effects()
+				if self.learning_system:
+					self.learning_system.add_notification(f"🏃 Speed Skill 3 (120%)")
+	
+	def _apply_skill_effects(self):
+		"""Apply skill effects to player stats"""
+		# Water skill affects max water reserve
+		self.max_water_reserve = self.water_skill_capacities[self.water_skill_level]
+		# Clamp current reserve to new max
+		if self.water_reserve > self.max_water_reserve:
+			self.water_reserve = self.max_water_reserve
+		
+		# Speed skill affects movement speed
+		self.speed = int(self.base_speed * self.speed_multipliers[self.speed_skill_level])
 
 	def get_status(self):
 		
