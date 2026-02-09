@@ -330,6 +330,12 @@ class LearningSystem:
         """Add a notification message"""
         self.notifications.append(message)
     
+    def add_score(self, points, reason=""):
+        """Add score points for player actions (like harvesting)"""
+        if not hasattr(self, 'score'):
+            self.score = 0
+        self.score += points
+    
     # =========================================================================
     # CONSEQUENCE CALCULATIONS
     # =========================================================================
