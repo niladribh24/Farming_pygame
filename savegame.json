@@ -1,8 +1,8 @@
 {
     "player": {
-        "money": 99,
+        "money": 53,
         "item_inventory": {
-            "wood": 16,
+            "wood": 15,
             "apple": 24,
             "corn": 23,
             "tomato": 16,
@@ -38,7 +38,7 @@
         "water_skill_level": 1,
         "speed_skill_level": 1,
         "drip_irrigation_unlocked": true,
-        "drip_irrigation_count": 3
+        "drip_irrigation_count": 5
     },
     "soil": {
         "soil_health": [
@@ -1309,7 +1309,7 @@
                 0,
                 0,
                 0,
-                4,
+                0,
                 0,
                 0,
                 0,
@@ -3776,9 +3776,7 @@
                     "F"
                 ],
                 [
-                    "F",
-                    "X",
-                    "W"
+                    "F"
                 ],
                 [
                     "F"
@@ -9124,20 +9122,15 @@
             ]
         ],
         "plants": [],
-        "drip_setups": [
-            {
-                "x": 18,
-                "y": 23
-            }
-        ]
+        "drip_setups": []
     },
     "learning": {
-        "day": 24,
+        "day": 26,
         "score": 113,
         "daily_actions": [],
         "achievements": [
-            "sustainable_starter",
-            "rotation_master"
+            "rotation_master",
+            "sustainable_starter"
         ],
         "skills": {}
     },

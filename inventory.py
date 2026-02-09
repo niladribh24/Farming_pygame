@@ -199,9 +199,13 @@ class Inventory:
             self.item_hash_map['wood'] = {'name': 'wood', 'quantity': self.player.item_inventory['wood'], 'type': 'supply', 'category': 3}
         
         drip_count = getattr(self.player, 'drip_irrigation_count', 0)
-        if drip_count > 0:
+        drip_unlocked = getattr(self.player, 'drip_irrigation_unlocked', False)
+        
+        # Show if possessed OR unlocked (so you can see you have 0)
+        if drip_count > 0 or drip_unlocked:
             self.item_hash_map['drip_irrigation'] = {'name': 'drip_irrigation', 'quantity': drip_count, 'type': 'supply', 'category': 3}
-            self.item_hash_map['drip'] = {'name': 'drip_irrigation', 'quantity': drip_count, 'type': 'supply', 'category': 3}  # Alias for easier search
+            # Add alias 'drip' for easier searching
+            self.item_hash_map['drip'] = {'name': 'drip_irrigation', 'quantity': drip_count, 'type': 'supply', 'category': 3}
     
     def search_items(self, query):
         """Search for items using hash map - O(1) for exact match, prefix search for partial"""
@@ -255,7 +259,9 @@ class Inventory:
                 items.append({'name': 'wood', 'quantity': self.player.item_inventory['wood'], 'type': 'supply'})
             # Drip irrigation count
             drip_count = getattr(self.player, 'drip_irrigation_count', 0)
-            if drip_count > 0:
+            drip_unlocked = getattr(self.player, 'drip_irrigation_unlocked', False)
+            
+            if drip_count > 0 or drip_unlocked:
                 items.append({'name': 'drip_irrigation', 'quantity': drip_count, 'type': 'supply'})
         
         return items

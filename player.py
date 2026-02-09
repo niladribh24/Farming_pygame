@@ -287,28 +287,25 @@ class Player(pygame.sprite.Sprite):
 		self.image = self.animations[self.status][int(self.frame_index)]
 
 	def apply_skill_effects(self):
-		"""Apply continuous effects from unlocked skills"""
-		if not self.learning_system:
-			return
-			
-		skills = self.learning_system.skill_tree.get_unlocked_skills()
+		"""Apply skill effects to player stats"""
+		# Water skill affects max water reserve
+		# Base comes from skill level (50, 100, 150, 200)
+		base_capacity = self.water_skill_capacities.get(self.water_skill_level, 50)
+		# Add tank bonus
+		tank_bonus = getattr(self, 'water_tank_bonus', 0)
+		self.max_water_reserve = base_capacity + tank_bonus
 		
-		# Skill: Faster Movement (Soil Care branch via Sustainable Farming -> Crop Rotation)
-		# Assuming 'Crop Rotation' gives speed boost as per user prompt logic
-		if 'Crop Rotation' in skills:
-			self.speed = self.base_speed * 1.2 # 20% faster
-		else:
-			self.speed = self.base_speed
+		# Clamp current reserve to new max
+		if self.water_reserve > self.max_water_reserve:
+			self.water_reserve = self.max_water_reserve
+		
+		# Speed skill affects movement speed
+		multiplier = self.speed_multipliers.get(self.speed_skill_level, 1.0)
+		self.speed = int(self.base_speed * multiplier)
 			
-		# Apply Fatigue Penalty
-		if self.fatigue > 0:
+		# Apply Fatigue Penalty (if implemented)
+		if hasattr(self, 'fatigue') and self.fatigue > 0:
 			self.speed *= 0.8 # Sluggish
-			
-		# Skill: Increased Water Capacity (Water Management)
-		skill_bonus = 20 if 'Water Management' in skills else 0
-		
-		# Total Max Water = Base + Skill + Tank Bonus
-		self.max_water_reserve = self.base_max_water_reserve + skill_bonus + getattr(self, 'water_tank_bonus', 0)
 
 	def input(self):
 		keys = pygame.key.get_pressed()
@@ -418,16 +415,7 @@ class Player(pygame.sprite.Sprite):
 						self.status = 'left_idle'
 						self.sleep = True
 	
-	def _apply_skill_effects(self):
-		"""Apply skill effects to player stats"""
-		# Water skill affects max water reserve
-		self.max_water_reserve = self.water_skill_capacities[self.water_skill_level]
-		# Clamp current reserve to new max
-		if self.water_reserve > self.max_water_reserve:
-			self.water_reserve = self.max_water_reserve
-		
-		# Speed skill affects movement speed
-		self.speed = int(self.base_speed * self.speed_multipliers[self.speed_skill_level])
+
 
 	def get_status(self):
 		

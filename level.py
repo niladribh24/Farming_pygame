@@ -82,6 +82,7 @@ class Level:
 		
 		# Skill tree
 		self.skill_tree = get_skill_tree(self.player)
+		self.skill_tree.learning_system = self.learning_system
 		
 		# Drip irrigation removal confirmation
 		self.drip_removal_pending = False
@@ -344,9 +345,11 @@ class Level:
 		
 		# I key to toggle Inventory
 		if keys[pygame.K_i] and not self.player.sleep and not self.shop_active and not self.settings_menu.is_open and not self.knowledge_book.is_open:
-			if current_time - self.inventory_toggle_timer > 400:
-				self.inventory.toggle()
-				self.inventory_toggle_timer = current_time
+			# Don't toggle if typing in search bar
+			if not (self.inventory.is_open and self.inventory.search_active):
+				if current_time - self.inventory_toggle_timer > 400:
+					self.inventory.toggle()
+					self.inventory_toggle_timer = current_time
 		
 		# P key to toggle Settings Menu
 		if keys[pygame.K_p] and not self.player.sleep and not self.shop_active and not self.knowledge_book.is_open and not self.inventory.is_open and not self.skill_tree.is_open:

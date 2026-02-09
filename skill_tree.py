@@ -4,6 +4,7 @@
 import pygame
 from settings import *
 from timer import Timer
+from knowledge_base import ACHIEVEMENT_DEFINITIONS
 
 # ==============================================================================
 # QUIZ DATA - Questions about sustainable agriculture (3 questions per level)
@@ -194,8 +195,9 @@ class SkillTreeUI:
         
         # UI State
         self.is_open = False
-        self.current_tab = 0  # 0: Quizzes, 1: Skill Tree
-        self.tabs = ["Quizzes", "Skill Tree"]
+        self.current_tab = 0  # 0: Quizzes, 1: Skill Tree, 2: Achievements
+        self.tabs = ["Quizzes", "Skill Tree", "Achievements"]
+        self.learning_system = None  # Set later for achievements
         
         # Quiz state
         self.selected_quiz = 0
@@ -295,9 +297,9 @@ class SkillTreeUI:
                     self._submit_answer()
                     self.timer.activate()
             else:
-                # Tab switching
+                # Tab switching (3 tabs now)
                 if keys[pygame.K_TAB]:
-                    self.current_tab = (self.current_tab + 1) % 2
+                    self.current_tab = (self.current_tab + 1) % 3
                     self.timer.activate()
                 
                 if self.current_tab == 0:  # Quizzes tab
@@ -370,7 +372,7 @@ class SkillTreeUI:
                 self.player.speed_skill_level = self.current_level
             elif quiz["skill_type"] == "drip":
                 self.player.drip_irrigation_unlocked = True
-            self.player._apply_skill_effects()
+            self.player.apply_skill_effects()
     
     def display(self):
         """Render the skill book"""
@@ -405,8 +407,10 @@ class SkillTreeUI:
             # Content
             if self.current_tab == 0:
                 self._render_quizzes_tab()
-            else:
+            elif self.current_tab == 1:
                 self._render_skill_tree_tab()
+            else:
+                self._render_achievements_tab()
             
             # Help text
             help_text = "TAB: Switch Page | Up/Down: Select | ENTER: Start | ESC: Close"
@@ -637,6 +641,58 @@ class SkillTreeUI:
     def _render_skill_branch(self, x, start_y, title, skills, current_level, color):
         """Legacy method - use _render_skill_branch_down instead"""
         self._render_skill_branch_down(x, start_y, title, skills, current_level, color)
+    
+    def _render_achievements_tab(self):
+        """Render the achievements page"""
+        start_y = self.book_y + 100
+        
+        # Get unlocked achievements from learning system
+        unlocked = set()
+        if self.learning_system:
+            unlocked = self.learning_system.achievements
+        
+        row = 0
+        col = 0
+        max_cols = 2
+        item_width = (self.book_width - 100) // max_cols
+        item_height = 80
+        
+        for ach_id, ach_data in ACHIEVEMENT_DEFINITIONS.items():
+            is_unlocked = ach_id in unlocked
+            
+            # Calculate position
+            x = self.book_x + 50 + col * item_width
+            y = start_y + row * item_height
+            
+            # Entry rect
+            entry_rect = pygame.Rect(x, y, item_width - 10, item_height - 10)
+            
+            if is_unlocked:
+                pygame.draw.rect(self.display_surface, (60, 80, 60), entry_rect, 0, 8)
+                pygame.draw.rect(self.display_surface, (100, 200, 100), entry_rect, 2, 8)
+                icon = "✅"
+                name_color = (150, 255, 150)
+            else:
+                pygame.draw.rect(self.display_surface, (50, 50, 50), entry_rect, 0, 8)
+                pygame.draw.rect(self.display_surface, (80, 80, 80), entry_rect, 2, 8)
+                icon = "🔒"
+                name_color = (120, 120, 120)
+            
+            # Icon and name
+            name_text = f"{icon} {ach_data['name']}"
+            name_surf = self.font.render(name_text, False, name_color)
+            self.display_surface.blit(name_surf, (entry_rect.left + 10, entry_rect.top + 10))
+            
+            # Description
+            desc_color = (180, 180, 180) if is_unlocked else (100, 100, 100)
+            desc_surf = self.small_font.render(ach_data['description'], False, desc_color)
+            self.display_surface.blit(desc_surf, (entry_rect.left + 10, entry_rect.top + 40))
+            
+            # Move to next position
+            col += 1
+            if col >= max_cols:
+                col = 0
+                row += 1
     
     def _render_quiz(self):
         """Render the active quiz question"""
