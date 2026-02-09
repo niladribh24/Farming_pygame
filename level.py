@@ -31,6 +31,7 @@ class Level:
 		self.tree_sprites = pygame.sprite.Group()
 		self.interaction_sprites = pygame.sprite.Group()
 		self.water_tank_sprites = pygame.sprite.Group()  # FEATURE: Placed water tanks
+		self.river_sprites = pygame.sprite.Group()       # FEATURE: Map water tiles (river)
 
 		self.soil_layer = SoilLayer(self.all_sprites, self.collision_sprites)
 		self.setup()
@@ -39,6 +40,8 @@ class Level:
 
 		self.learning_system = LearningSystem()
 		self.soil_layer.learning_system = self.learning_system
+		self.soil_layer.water_tank_sprites = self.water_tank_sprites
+		self.soil_layer.river_sprites = self.river_sprites
 		self.overlay.learning_system = self.learning_system
 		self.overlay.soil_layer = self.soil_layer
 		self.overlay.interaction_sprites = self.interaction_sprites
@@ -116,7 +119,7 @@ class Level:
 
 		water_frames = import_folder('./graphics/water')
 		for x, y, surf in tmx_data.get_layer_by_name('Water').tiles():
-			Water((x * TILE_SIZE,y * TILE_SIZE), water_frames, self.all_sprites)
+			Water((x * TILE_SIZE,y * TILE_SIZE), water_frames, [self.all_sprites, self.river_sprites])
 
 		for obj in tmx_data.get_layer_by_name('Trees'):
 			Tree(

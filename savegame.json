@@ -1,26 +1,26 @@
 {
     "player": {
-        "money": 1,
+        "money": 27,
         "item_inventory": {
-            "wood": 12,
+            "wood": 11,
             "apple": 24,
-            "corn": 23,
+            "corn": 16,
             "tomato": 4,
-            "wheat": 0,
+            "wheat": 1,
             "carrot": 0,
             "potato": 0
         },
         "seed_inventory": {
             "corn": 0,
-            "tomato": 2,
-            "wheat": 5,
+            "tomato": 0,
+            "wheat": 0,
             "carrot": 3,
             "potato": 2
         },
         "fertilizer_inventory": {
-            "compost": 3,
+            "compost": 2,
             "bone_meal": 0,
-            "fish_emulsion": 6,
+            "fish_emulsion": 5,
             "blood_meal": 0,
             "wood_ash": 0,
             "npk_10_10_10": 5,
@@ -31,14 +31,14 @@
             "drip_emitter": 0,
             "water_tank": 0
         },
-        "water_reserve": 100,
+        "water_reserve": 145,
         "max_water_reserve": 150,
         "selected_tool_index": 0,
-        "selected_seed_index": 0,
+        "selected_seed_index": 2,
         "water_skill_level": 2,
         "speed_skill_level": 3,
         "drip_irrigation_unlocked": true,
-        "drip_irrigation_count": 3
+        "drip_irrigation_count": 4
     },
     "soil": {
         "soil_health": [
@@ -1616,7 +1616,7 @@
                 0,
                 0,
                 0,
-                0,
+                10,
                 0,
                 0,
                 0,
@@ -4129,198 +4129,195 @@
                     "F"
                 ],
                 [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                []
+            ],
+            [
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                []
+            ],
+            [
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
+                    "F"
+                ],
+                [
                     "F",
-                    "W",
-                    "W",
-                    "W",
-                    "W",
+                    "X",
                     "W"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                []
-            ],
-            [
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                []
-            ],
-            [
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
-                ],
-                [
-                    "F"
                 ],
                 [
                     "F"
@@ -8524,7 +8521,7 @@
                 "tomato",
                 null,
                 null,
-                null,
+                "wheat",
                 null,
                 null,
                 null,
@@ -8576,6 +8573,58 @@
                 "tomato",
                 null,
                 null,
+                "tomato",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            ],
+            [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "wheat",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
                 null,
                 null,
                 null,
@@ -8619,59 +8668,7 @@
                 null,
                 null,
                 null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
-            ],
-            [
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
+                "wheat",
                 null,
                 null,
                 null,
@@ -9129,26 +9126,22 @@
         "plants": [],
         "drip_setups": [
             {
-                "x": 18,
-                "y": 28
+                "x": 12,
+                "y": 31
             },
             {
-                "x": 22,
-                "y": 28
-            },
-            {
-                "x": 18,
-                "y": 25
+                "x": 12,
+                "y": 29
             }
         ]
     },
     "learning": {
-        "day": 74,
-        "score": 138,
+        "day": 94,
+        "score": 230,
         "daily_actions": [],
         "achievements": [
-            "rotation_master",
-            "sustainable_starter"
+            "sustainable_starter",
+            "rotation_master"
         ],
         "skills": {}
     },
