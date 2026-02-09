@@ -38,7 +38,7 @@ class Inventory:
         )
         
         # Category tabs
-        self.categories = ['Seeds', 'Crops', 'Materials', 'Fertilizers']
+        self.categories = ['Seeds', 'Harvest', 'Fertilizers', 'Supplies']
         self.current_category = 0
         
         # Selection
@@ -86,6 +86,7 @@ class Inventory:
         
         # Create simple colored squares for items without icons
         self._create_placeholder_icons()
+        self._create_drip_irrigation_icon()
     
     def _create_placeholder_icons(self):
         """Create simple icons for items without graphics"""
@@ -142,6 +143,21 @@ class Inventory:
         pygame.draw.ellipse(surf, (50, 180, 50), (26, 6, 10, 6))
         self.item_icons['apple'] = surf
     
+    def _create_drip_irrigation_icon(self):
+        """Create a drip irrigation icon"""
+        surf = pygame.Surface((48, 48), pygame.SRCALPHA)
+        # Main pipe (horizontal)
+        pygame.draw.rect(surf, (100, 100, 100), (4, 20, 40, 6), border_radius=2)
+        # Vertical connectors
+        pygame.draw.rect(surf, (80, 80, 80), (10, 24, 4, 12))
+        pygame.draw.rect(surf, (80, 80, 80), (22, 24, 4, 12))
+        pygame.draw.rect(surf, (80, 80, 80), (34, 24, 4, 12))
+        # Water droplets
+        pygame.draw.circle(surf, (100, 180, 255), (12, 42), 4)
+        pygame.draw.circle(surf, (100, 180, 255), (24, 42), 4)
+        pygame.draw.circle(surf, (100, 180, 255), (36, 42), 4)
+        self.item_icons['drip_irrigation'] = surf
+    
     def toggle(self):
         """Toggle inventory open/closed"""
         self.is_open = not self.is_open
@@ -159,31 +175,33 @@ class Inventory:
         """Build a hash map (dictionary) of all items for O(1) search lookup"""
         self.item_hash_map = {}
         
-        # Index seeds
+        # Index seeds (category 0)
         for seed, qty in self.player.seed_inventory.items():
             if qty > 0:
                 key = seed.lower()
                 self.item_hash_map[key] = {'name': seed, 'quantity': qty, 'type': 'seed', 'category': 0}
         
-        # Index crops
-        crop_names = ['corn', 'tomato', 'wheat', 'carrot', 'potato']
-        for crop in crop_names:
-            if crop in self.player.item_inventory and self.player.item_inventory[crop] > 0:
-                key = crop.lower()
-                self.item_hash_map[key] = {'name': crop, 'quantity': self.player.item_inventory[crop], 'type': 'crop', 'category': 1}
+        # Index harvest items - crops + apples (category 1)
+        harvest_names = ['corn', 'tomato', 'wheat', 'carrot', 'potato', 'apple']
+        for item_name in harvest_names:
+            if item_name in self.player.item_inventory and self.player.item_inventory[item_name] > 0:
+                key = item_name.lower()
+                self.item_hash_map[key] = {'name': item_name, 'quantity': self.player.item_inventory[item_name], 'type': 'harvest', 'category': 1}
         
-        # Index materials
-        material_names = ['wood', 'apple']
-        for mat in material_names:
-            if mat in self.player.item_inventory and self.player.item_inventory[mat] > 0:
-                key = mat.lower()
-                self.item_hash_map[key] = {'name': mat, 'quantity': self.player.item_inventory[mat], 'type': 'material', 'category': 2}
-        
-        # Index fertilizers
+        # Index fertilizers (category 2)
         for fert, qty in self.player.fertilizer_inventory.items():
             if qty > 0:
                 key = fert.lower()
-                self.item_hash_map[key] = {'name': fert, 'quantity': qty, 'type': 'fertilizer', 'category': 3}
+                self.item_hash_map[key] = {'name': fert, 'quantity': qty, 'type': 'fertilizer', 'category': 2}
+        
+        # Index supplies (category 3) - wood + drip irrigation
+        if 'wood' in self.player.item_inventory and self.player.item_inventory['wood'] > 0:
+            self.item_hash_map['wood'] = {'name': 'wood', 'quantity': self.player.item_inventory['wood'], 'type': 'supply', 'category': 3}
+        
+        drip_count = getattr(self.player, 'drip_irrigation_count', 0)
+        if drip_count > 0:
+            self.item_hash_map['drip_irrigation'] = {'name': 'drip_irrigation', 'quantity': drip_count, 'type': 'supply', 'category': 3}
+            self.item_hash_map['drip'] = {'name': 'drip_irrigation', 'quantity': drip_count, 'type': 'supply', 'category': 3}  # Alias for easier search
     
     def search_items(self, query):
         """Search for items using hash map - O(1) for exact match, prefix search for partial"""
@@ -220,22 +238,25 @@ class Inventory:
                 if qty > 0:
                     items.append({'name': seed, 'quantity': qty, 'type': 'seed'})
                 
-        elif self.current_category == 1:  # Crops
-            crop_names = ['corn', 'tomato', 'wheat', 'carrot', 'potato']
-            for crop in crop_names:
-                if crop in self.player.item_inventory and self.player.item_inventory[crop] > 0:
-                    items.append({'name': crop, 'quantity': self.player.item_inventory[crop], 'type': 'crop'})
+        elif self.current_category == 1:  # Harvest (Crops + Apples)
+            harvest_names = ['corn', 'tomato', 'wheat', 'carrot', 'potato', 'apple']
+            for item_name in harvest_names:
+                if item_name in self.player.item_inventory and self.player.item_inventory[item_name] > 0:
+                    items.append({'name': item_name, 'quantity': self.player.item_inventory[item_name], 'type': 'harvest'})
                     
-        elif self.current_category == 2:  # Materials
-            material_names = ['wood', 'apple']
-            for mat in material_names:
-                if mat in self.player.item_inventory and self.player.item_inventory[mat] > 0:
-                    items.append({'name': mat, 'quantity': self.player.item_inventory[mat], 'type': 'material'})
-                    
-        elif self.current_category == 3:  # Fertilizers
+        elif self.current_category == 2:  # Fertilizers
             for fert, qty in self.player.fertilizer_inventory.items():
                 if qty > 0:
                     items.append({'name': fert, 'quantity': qty, 'type': 'fertilizer'})
+        
+        elif self.current_category == 3:  # Supplies (Wood + Drip Irrigation)
+            # Wood
+            if 'wood' in self.player.item_inventory and self.player.item_inventory['wood'] > 0:
+                items.append({'name': 'wood', 'quantity': self.player.item_inventory['wood'], 'type': 'supply'})
+            # Drip irrigation count
+            drip_count = getattr(self.player, 'drip_irrigation_count', 0)
+            if drip_count > 0:
+                items.append({'name': 'drip_irrigation', 'quantity': drip_count, 'type': 'supply'})
         
         return items
     
