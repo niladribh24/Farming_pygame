@@ -458,8 +458,15 @@ class SoilLayer:
 						if self.learning_system:
 							self.apply_soil_impact(col_idx, row_idx, 'correct_water')
 					elif water_count == 0 and 'P' in self.grid[row_idx][col_idx]:
-						# Under-watering (planted but not watered), UNLESS it's raining
-						if self.learning_system and not self.raining:
+						# Under-watering (planted but not watered), UNLESS it's raining or drip-irrigated
+						# Check if this tile is covered by drip irrigation
+						is_drip_covered = False
+						for drip in self.drip_irrigation_sprites.sprites():
+							if (col_idx, row_idx) in drip.get_covered_tiles():
+								is_drip_covered = True
+								break
+						
+						if self.learning_system and not self.raining and not is_drip_covered:
 							self.apply_soil_impact(col_idx, row_idx, 'under_water')
 					
 					# Daily tile health decay if NOT fertilized today

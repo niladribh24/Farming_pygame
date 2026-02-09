@@ -4,7 +4,7 @@
         "item_inventory": {
             "wood": 16,
             "apple": 24,
-            "corn": 20,
+            "corn": 23,
             "tomato": 13,
             "wheat": 0,
             "carrot": 0,
@@ -12,7 +12,7 @@
         },
         "seed_inventory": {
             "corn": 0,
-            "tomato": 5,
+            "tomato": 2,
             "wheat": 3,
             "carrot": 3,
             "potato": 2
@@ -34,7 +34,7 @@
         "water_reserve": 40,
         "max_water_reserve": 50,
         "selected_tool_index": 1,
-        "selected_seed_index": 0,
+        "selected_seed_index": 1,
         "water_skill_level": 0,
         "speed_skill_level": 0,
         "drip_irrigation_unlocked": true,
@@ -1258,7 +1258,7 @@
                 0,
                 0,
                 0,
-                28,
+                19,
                 0,
                 0,
                 0,
@@ -1309,8 +1309,8 @@
                 0,
                 0,
                 0,
-                33,
-                18,
+                24,
+                9,
                 0,
                 0,
                 0,
@@ -8265,7 +8265,7 @@
                 null,
                 null,
                 "corn",
-                "corn",
+                "tomato",
                 null,
                 null,
                 null,
@@ -8316,8 +8316,8 @@
                 null,
                 null,
                 null,
-                "corn",
-                "corn",
+                "tomato",
+                "tomato",
                 null,
                 null,
                 null,
@@ -9134,32 +9134,32 @@
             {
                 "x": 19,
                 "y": 24,
-                "type": "corn",
-                "age": 3,
-                "harvestable": true,
+                "type": "tomato",
+                "age": 0.7,
+                "harvestable": false,
                 "unwatered_days": 0,
                 "fertilized_days": 0,
-                "total_grow_days": 3
+                "total_grow_days": 1
             },
             {
                 "x": 18,
                 "y": 24,
-                "type": "corn",
-                "age": 3,
-                "harvestable": true,
+                "type": "tomato",
+                "age": 0.7,
+                "harvestable": false,
                 "unwatered_days": 0,
-                "fertilized_days": 1,
-                "total_grow_days": 3
+                "fertilized_days": 0,
+                "total_grow_days": 1
             },
             {
                 "x": 19,
                 "y": 23,
-                "type": "corn",
-                "age": 3,
-                "harvestable": true,
+                "type": "tomato",
+                "age": 0.7,
+                "harvestable": false,
                 "unwatered_days": 0,
                 "fertilized_days": 0,
-                "total_grow_days": 3
+                "total_grow_days": 1
             }
         ],
         "drip_setups": [
@@ -9174,10 +9174,11 @@
         ]
     },
     "learning": {
-        "day": 15,
-        "score": 78,
+        "day": 17,
+        "score": 74,
         "daily_actions": [],
         "achievements": [
+            "rotation_master",
             "sustainable_starter"
         ],
         "skills": {}
@@ -9358,10 +9359,10 @@
             "timer": 0
         },
         {
-            "x": 682,
-            "y": 846,
-            "alive": false,
-            "timer": 2
+            "x": 670,
+            "y": 770,
+            "alive": true,
+            "timer": 0
         }
     ],
     "badges": [],
