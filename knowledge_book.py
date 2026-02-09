@@ -1,10 +1,4 @@
-# Sustainable Farming Knowledge Book
-# Educational content for the gamified learning platform
 
-# ==============================================================================
-# KNOWLEDGE CARDS - Dictionary of sustainable farming practices
-# Each card teaches a specific concept with consequences explained
-# ==============================================================================
 
 KNOWLEDGE_CARDS = {
     "crop_rotation": {
@@ -247,9 +241,6 @@ Every fertilizer shows N-P-K ratio (e.g., 10-10-10):
     }
 }
 
-# ==============================================================================
-# CATEGORY DEFINITIONS
-# ==============================================================================
 
 KNOWLEDGE_CATEGORIES = {
     "Fundamentals": {"icon": "📚", "color": (200, 200, 255)},
@@ -260,9 +251,6 @@ KNOWLEDGE_CATEGORIES = {
     "Soil Recovery": {"icon": "🌱", "color": (100, 200, 100)}
 }
 
-# ==============================================================================
-# QUICK TIPS - Short reminders shown during gameplay
-# ==============================================================================
 
 QUICK_TIPS = [
     "💡 Rotate crops to keep soil healthy!",
@@ -283,9 +271,7 @@ QUICK_TIPS = [
 ]
 
 def get_unlocked_cards():
-    """Get list of unlocked knowledge cards"""
     return {k: v for k, v in KNOWLEDGE_CARDS.items() if v.get("unlocked", True)}
 
 def get_card_by_category(category):
-    """Get all cards in a specific category"""
     return {k: v for k, v in KNOWLEDGE_CARDS.items() if v.get("category") == category}

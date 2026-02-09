@@ -1,11 +1,11 @@
 {
     "player": {
-        "money": 53,
+        "money": 1,
         "item_inventory": {
-            "wood": 15,
+            "wood": 12,
             "apple": 24,
             "corn": 23,
-            "tomato": 16,
+            "tomato": 4,
             "wheat": 0,
             "carrot": 0,
             "potato": 0
@@ -13,32 +13,32 @@
         "seed_inventory": {
             "corn": 0,
             "tomato": 2,
-            "wheat": 3,
+            "wheat": 5,
             "carrot": 3,
             "potato": 2
         },
         "fertilizer_inventory": {
-            "compost": 1,
+            "compost": 3,
             "bone_meal": 0,
-            "fish_emulsion": 0,
-            "blood_meal": 1,
-            "wood_ash": 2,
-            "npk_10_10_10": 2,
-            "npk_5_10_10": 1,
+            "fish_emulsion": 6,
+            "blood_meal": 0,
+            "wood_ash": 0,
+            "npk_10_10_10": 5,
+            "npk_5_10_10": 0,
             "urea": 1
         },
         "equipment_inventory": {
             "drip_emitter": 0,
             "water_tank": 0
         },
-        "water_reserve": 50,
-        "max_water_reserve": 50,
+        "water_reserve": 100,
+        "max_water_reserve": 150,
         "selected_tool_index": 0,
         "selected_seed_index": 0,
-        "water_skill_level": 1,
-        "speed_skill_level": 1,
+        "water_skill_level": 2,
+        "speed_skill_level": 3,
         "drip_irrigation_unlocked": true,
-        "drip_irrigation_count": 5
+        "drip_irrigation_count": 3
     },
     "soil": {
         "soil_health": [
@@ -4129,7 +4129,12 @@
                     "F"
                 ],
                 [
-                    "F"
+                    "F",
+                    "W",
+                    "W",
+                    "W",
+                    "W",
+                    "W"
                 ],
                 [
                     "F"
@@ -8515,8 +8520,8 @@
                 null,
                 null,
                 null,
-                null,
-                null,
+                "tomato",
+                "tomato",
                 null,
                 null,
                 null,
@@ -8567,8 +8572,8 @@
                 null,
                 null,
                 null,
-                null,
-                null,
+                "tomato",
+                "tomato",
                 null,
                 null,
                 null,
@@ -9122,11 +9127,24 @@
             ]
         ],
         "plants": [],
-        "drip_setups": []
+        "drip_setups": [
+            {
+                "x": 18,
+                "y": 28
+            },
+            {
+                "x": 22,
+                "y": 28
+            },
+            {
+                "x": 18,
+                "y": 25
+            }
+        ]
     },
     "learning": {
-        "day": 26,
-        "score": 113,
+        "day": 74,
+        "score": 138,
         "daily_actions": [],
         "achievements": [
             "rotation_master",

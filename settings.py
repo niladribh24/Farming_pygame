@@ -1,10 +1,8 @@
 from pygame.math import Vector2
-# screen
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 TILE_SIZE = 64
 
-# overlay positions 
 OVERLAY_POSITIONS = {
 	'tool' : (40, SCREEN_HEIGHT - 15), 
 	'seed': (80, SCREEN_HEIGHT - 5)}
@@ -59,7 +57,6 @@ PURCHASE_PRICES = {
 	'chemical_fertilizer': 5
 }
 
-# Learning System UI Positions
 SOIL_HEALTH_BAR_POS = (SCREEN_WIDTH - 220, 20)
 SCORE_DISPLAY_POS = (SCREEN_WIDTH - 220, 90)
 NOTIFICATION_POS = (SCREEN_WIDTH // 2, 140)

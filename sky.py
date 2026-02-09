@@ -12,7 +12,6 @@ class Sky:
 		self.night_color = (38,101,189)  # Dark night
 		self.current_color = [255,255,255]
 		
-		# 4-phase cycle timing (in milliseconds)
 		self.bright_day_duration = 90000   # Stay bright (1:30)
 		self.sunset_duration = 30000       # Darken (0:30)
 		self.dark_night_duration = 90000   # Stay dark (1:30)
@@ -27,14 +26,12 @@ class Sky:
 		elapsed = current_time - self.phase_start_time
 		
 		if self.current_phase == 'day':
-			# BRIGHT DAY: stay at full brightness
 			self.current_color = [255, 255, 255]
 			if elapsed >= self.bright_day_duration:
 				self.current_phase = 'sunset'
 				self.phase_start_time = current_time
 		
 		elif self.current_phase == 'sunset':
-			# SUNSET: gradually darken
 			progress = min(1.0, elapsed / self.sunset_duration)
 			for index, value in enumerate(self.night_color):
 				self.current_color[index] = 255 - (255 - value) * progress
@@ -43,7 +40,6 @@ class Sky:
 				self.phase_start_time = current_time
 		
 		elif self.current_phase == 'night':
-			# DARK NIGHT: stay dark
 			for index, value in enumerate(self.night_color):
 				self.current_color[index] = value
 			if elapsed >= self.dark_night_duration:
@@ -51,7 +47,6 @@ class Sky:
 				self.phase_start_time = current_time
 		
 		elif self.current_phase == 'sunrise':
-			# SUNRISE: gradually brighten
 			progress = min(1.0, elapsed / self.sunrise_duration)
 			for index, value in enumerate(self.night_color):
 				self.current_color[index] = value + (255 - value) * progress
@@ -64,7 +59,6 @@ class Sky:
 		self.display_surface.blit(self.full_surf, (0,0), special_flags = pygame.BLEND_RGBA_MULT)
 	
 	def reset_cycle(self):
-		"""Reset to start of day (called after sleeping or day transition)"""
 		self.current_color = [255, 255, 255]
 		self.phase_start_time = pygame.time.get_ticks()
 		self.current_phase = 'day'
@@ -73,12 +67,10 @@ class Sky:
 class Drop(Generic):
 	def __init__(self, surf, pos, moving, groups, z):
 		
-		# general setup
 		super().__init__(pos, surf, groups, z)
 		self.lifetime = randint(400,500)
 		self.start_time = pygame.time.get_ticks()
 
-		# moving 
 		self.moving = moving
 		if self.moving:
 			self.pos = pygame.math.Vector2(self.rect.topleft)
@@ -86,12 +78,10 @@ class Drop(Generic):
 			self.speed = randint(200,250)
 
 	def update(self,dt):
-		# movement
 		if self.moving:
 			self.pos += self.direction * self.speed * dt
 			self.rect.topleft = (round(self.pos.x), round(self.pos.y))
 
-		# timer
 		if pygame.time.get_ticks() - self.start_time >= self.lifetime:
 			self.kill()
 

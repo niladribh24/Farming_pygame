@@ -22,13 +22,10 @@ from skill_tree import get_skill_tree
 class Level:
 	def __init__(self):
 
-		# get the display surface
 		self.display_surface = pygame.display.get_surface()
         
-		# Reset flag
 		self.reset_pending = False
 
-		# sprite groups
 		self.all_sprites = CameraGroup()
 		self.collision_sprites = pygame.sprite.Group()
 		self.tree_sprites = pygame.sprite.Group()
@@ -40,7 +37,6 @@ class Level:
 		self.overlay = Overlay(self.player)
 		self.transition = Transition(self.reset, self.player)
 
-		# LEARNING SYSTEM - Initialize and connect
 		self.learning_system = LearningSystem()
 		self.soil_layer.learning_system = self.learning_system
 		self.overlay.learning_system = self.learning_system
@@ -48,65 +44,51 @@ class Level:
 		self.overlay.interaction_sprites = self.interaction_sprites
 		self.player.learning_system = self.learning_system
 		
-		# Connect water tank placement callback
 		self.player.place_tank_callback = self.place_water_tank
 		
-		# Day summary state
 		self.showing_summary = False
 		self.day_summary_text = ""
 
-		# sky
 		self.rain = Rain(self.all_sprites)
 		self.raining = randint(0,10) > 7
 		self.soil_layer.raining = self.raining
 		self.sky = Sky()
 		
-		# Sync weather with learning system
 		self._sync_weather()
 		if self.raining:
 			self.soil_layer.water_all()
 
-		# UI - Singleton setup
 		self.menu = Menu(self.player, self.toggle_shop)
 		self.settings_menu = get_settings_menu(self)
 		self.settings_menu.level = self # Ensure singleton points to THIS level instance
 		self.shop_active = False
 		
-		# Knowledge book
 		self.knowledge_book = get_knowledge_book()
 		
-		# Inventory system
 		self.inventory = get_inventory(self.player)
 		self.inventory_toggle_timer = pygame.time.get_ticks()
 		self.book_toggle_timer = pygame.time.get_ticks()
 		
-		# Skill tree
 		self.skill_tree = get_skill_tree(self.player)
 		self.skill_tree.learning_system = self.learning_system
 		
-		# Drip irrigation removal confirmation
 		self.drip_removal_pending = False
 		self.drip_removal_target = None
 		self.skill_tree_toggle_timer = pygame.time.get_ticks()
 
-		# music
 		self.success = pygame.mixer.Sound('./audio/success.wav')
 		self.success.set_volume(0.3)
 		self.music = pygame.mixer.Sound('./audio/music.mp3')
 		self.music.set_volume(0)  # Initial volume (muted by default)
 		self.music.play(loops = -1)
 		
-		# Settings menu (created after music so it can control volume)
 		self.settings_menu = get_settings_menu(self)
 		self.settings_toggle_timer = pygame.time.get_ticks()
 
-		# SAVE SYSTEM
 		self.save_manager = SaveManager()
 		try:
-			# Pass tree sprites to load their state
 			self.save_manager.load_game(self.player, self.soil_layer, self.learning_system, self.tree_sprites, water_tanks=self.water_tank_sprites)
 			
-			# Re-sync weather and water after load (in case save was rainy)
 			self._sync_weather()
 			if self.raining:
 				self.soil_layer.water_all()
@@ -114,7 +96,6 @@ class Level:
 			print(f"Failed to load save: {e}")
 	
 	def _sync_weather(self):
-		"""Sync game weather with learning system weather queue"""
 		weather = self.learning_system.get_current_weather()
 		self.raining = weather == 'rain'
 		self.soil_layer.raining = self.raining
@@ -122,7 +103,6 @@ class Level:
 	def setup(self):
 		tmx_data = load_pygame('./data/map.tmx')
 
-		# house 
 		for layer in ['HouseFloor', 'HouseFurnitureBottom']:
 			for x, y, surf in tmx_data.get_layer_by_name(layer).tiles():
 				Generic((x * TILE_SIZE,y * TILE_SIZE), surf, self.all_sprites, LAYERS['house bottom'])
@@ -131,16 +111,13 @@ class Level:
 			for x, y, surf in tmx_data.get_layer_by_name(layer).tiles():
 				Generic((x * TILE_SIZE,y * TILE_SIZE), surf, self.all_sprites)
 
-		# Fence
 		for x, y, surf in tmx_data.get_layer_by_name('Fence').tiles():
 			Generic((x * TILE_SIZE,y * TILE_SIZE), surf, [self.all_sprites, self.collision_sprites])
 
-		# water 
 		water_frames = import_folder('./graphics/water')
 		for x, y, surf in tmx_data.get_layer_by_name('Water').tiles():
 			Water((x * TILE_SIZE,y * TILE_SIZE), water_frames, self.all_sprites)
 
-		# trees 
 		for obj in tmx_data.get_layer_by_name('Trees'):
 			Tree(
 				pos = (obj.x, obj.y), 
@@ -150,15 +127,12 @@ class Level:
 				player_add = self.player_add,
 				all_sprites = self.all_sprites)
 
-		# wildflowers 
 		for obj in tmx_data.get_layer_by_name('Decoration'):
 			WildFlower((obj.x, obj.y), obj.image, [self.all_sprites, self.collision_sprites])
 
-		# collion tiles
 		for x, y, surf in tmx_data.get_layer_by_name('Collision').tiles():
 			Generic((x * TILE_SIZE, y * TILE_SIZE), pygame.Surface((TILE_SIZE, TILE_SIZE)), self.collision_sprites)
 
-		# Player 
 		for obj in tmx_data.get_layer_by_name('Player'):
 			if obj.name == 'Start':
 				self.player = Player(
@@ -193,100 +167,76 @@ class Level:
 		self.shop_active = not self.shop_active
 	
 	def place_water_tank(self, pos):
-		"""Place a water tank in the world at the given position"""
-		# Snap to tile grid
 		x = (int(pos[0]) // TILE_SIZE) * TILE_SIZE
 		y = (int(pos[1]) // TILE_SIZE) * TILE_SIZE
 		
-		# Create the tank sprite with collision
 		PlacedWaterTank(
 			pos=(x, y),
 			groups=[self.all_sprites, self.water_tank_sprites],
 			collision_groups=[self.collision_sprites]
 		)
 		
-		# Increase player's max water capacity by 20 (via bonus)
 		self.player.water_tank_bonus = getattr(self.player, 'water_tank_bonus', 0) + 20
 		
-		# Force update to apply immediately
 		self.player.apply_skill_effects()
 		self.learning_system.add_notification(f"💧 Water capacity +20! (Max: {self.player.max_water_reserve})")
 
 	def reset(self):
-		# LEARNING SYSTEM - End of day processing
-		# Evaluate watering and reset water counts
 		self.soil_layer.reset_daily_water_counts()
 		
-		# Check for achievements and skill unlocks
 		stats = {
 			'avg_soil_health': self.soil_layer.get_average_soil_health()
 		}
 		self.learning_system.check_achievements(stats)
 		self.learning_system.check_skill_unlocks(stats)
 		
-		# Generate and store day summary
 		self.day_summary_text = self.learning_system.get_daily_summary()
 		
-		# Advance to next day in learning system
 		self.learning_system.advance_day()
 		self.learning_system.clear_daily_log()
 		
-		# plants
 		self.soil_layer.update_plants()
 
-		# soil
 		self.soil_layer.remove_water()
 		
-		# Sync weather from learning system queue
 		self._sync_weather()
 		if self.raining:
 			self.soil_layer.water_all()
-			# Collect rainwater into player's reserve
 			self.player.collect_rainwater(5)
-			# Bonus collection from placed water tanks
 			tank_bonus = len(self.water_tank_sprites.sprites()) * 15
 			if tank_bonus > 0:
 				self.player.rain_tank.collect_rain(tank_bonus)
 				self.learning_system.add_notification(f"💧 Tanks collected +{tank_bonus} water!")
 		else:
-			# Drip irrigation auto-waters when not raining (prevents overwatering)
 			drip_watered = self.soil_layer.auto_water_drip_tiles()
 			if drip_watered > 0:
 				self.learning_system.add_notification(f"Drip irrigation watered {drip_watered} tiles automatically!")
 		
-		# Auto-save after day transition (update trees first)
-		# Regrow trees logic
 		for tree in self.tree_sprites.sprites():
 			if not tree.alive:
 				tree.respawn_timer += 1
 				if tree.respawn_timer >= 5:
 					tree.respawn()
 
-			# Clear old apples and spawn new ones (create_fruit checks alive status)
 			for apple in tree.apple_sprites.sprites():
 				apple.kill()
 			tree.create_fruit()
 
 		self.save_manager.save_game(self.player, self.soil_layer, self.learning_system, self.tree_sprites, water_tanks=self.water_tank_sprites)
 		
-		# Reset sky to morning after sleeping
 		self.sky.reset_cycle()
 
 	def save(self):
-		"""Public method to trigger save (e.g. on quit)"""
 		self.save_manager.save_game(self.player, self.soil_layer, self.learning_system, self.tree_sprites, water_tanks=self.water_tank_sprites)
 
-		# sky - reset day/night cycle
 		self.sky.reset_cycle()
 
 	def plant_collision(self):
 		if self.soil_layer.plant_sprites:
 			for plant in self.soil_layer.plant_sprites.sprites():
 				if plant.harvestable and plant.rect.colliderect(self.player.hitbox):
-					# Get tile health for multiplier
 					tile_health = self.soil_layer.get_tile_soil_health(plant.rect.center)
 					
-					# Tile health multiplier: <50% = x1, >=50% = x2, 100% = x4
 					if tile_health >= 100:
 						health_multiplier = 4
 					elif tile_health >= 50:
@@ -294,21 +244,17 @@ class Level:
 					else:
 						health_multiplier = 1
 					
-					# Fertilizer bonus: x2 if fertilized majority of growth days
 					fertilizer_multiplier = 1
 					if plant.total_grow_days > 0:
 						fertilized_ratio = plant.fertilized_days / plant.total_grow_days
 						if fertilized_ratio >= 0.5:  # 50% or more days fertilized
 							fertilizer_multiplier = 2
 					
-					# Total yield = base * health_multiplier * fertilizer_multiplier
 					total_yield = health_multiplier * fertilizer_multiplier
 					
-					# Add to inventory based on total yield
 					for _ in range(total_yield):
 						self.player_add(plant.plant_type)
 					
-					# Show notification based on multiplier and add score bonus
 					if total_yield >= 8:
 						self.learning_system.add_notification(f"x{total_yield} MEGA harvest! (100% health + fertilized) +20pts")
 						self.learning_system.add_score(20, "mega_harvest")
@@ -329,52 +275,42 @@ class Level:
 		if events is None:
 			events = []
 		
-		# drawing logic
 		self.display_surface.fill('black')
 		self.all_sprites.custom_draw(self.player)
 		
-		# Handle keyboard input for book toggle (works in all states except sleeping)
 		keys = pygame.key.get_pressed()
 		current_time = pygame.time.get_ticks()
 		
-		# B key to toggle Knowledge Book
 		if keys[pygame.K_b] and not self.player.sleep and not self.shop_active and not self.settings_menu.is_open and not self.inventory.is_open:
 			if current_time - self.book_toggle_timer > 400:
 				self.knowledge_book.toggle()
 				self.book_toggle_timer = current_time
 		
-		# I key to toggle Inventory
 		if keys[pygame.K_i] and not self.player.sleep and not self.shop_active and not self.settings_menu.is_open and not self.knowledge_book.is_open:
-			# Don't toggle if typing in search bar
 			if not (self.inventory.is_open and self.inventory.search_active):
 				if current_time - self.inventory_toggle_timer > 400:
 					self.inventory.toggle()
 					self.inventory_toggle_timer = current_time
 		
-		# P key to toggle Settings Menu
 		if keys[pygame.K_p] and not self.player.sleep and not self.shop_active and not self.knowledge_book.is_open and not self.inventory.is_open and not self.skill_tree.is_open:
 			if current_time - self.settings_toggle_timer > 400:
 				self.settings_menu.toggle()
 				self.settings_toggle_timer = current_time
 		
-		# T key to toggle Skill Tree
 		if keys[pygame.K_t] and not self.player.sleep and not self.shop_active and not self.knowledge_book.is_open and not self.inventory.is_open and not self.settings_menu.is_open:
 			if current_time - self.skill_tree_toggle_timer > 400:
 				self.skill_tree.toggle()
 				self.skill_tree_toggle_timer = current_time
 		
-		# X key to remove drip irrigation (with confirmation)
 		if keys[pygame.K_x] and not self.player.sleep and not self.shop_active:
 			if current_time - self.skill_tree_toggle_timer > 400:  # Reuse timer
 				self.skill_tree_toggle_timer = current_time
 				if self.drip_removal_pending:
-					# Confirm removal
 					if self.drip_removal_target:
 						self.soil_layer.remove_drip_irrigation(self.drip_removal_target, self.player)
 					self.drip_removal_pending = False
 					self.drip_removal_target = None
 				else:
-					# Check if standing on drip irrigation
 					target_pos = self.player.rect.center
 					for drip in self.soil_layer.drip_irrigation_sprites.sprites():
 						if drip.rect.collidepoint(target_pos):
@@ -383,24 +319,20 @@ class Level:
 							self.learning_system.add_notification("Remove drip irrigation? Press X again to confirm, ESC to cancel.")
 							break
 		
-		# ESC cancels drip removal
 		if keys[pygame.K_ESCAPE] and self.drip_removal_pending:
 			self.drip_removal_pending = False
 			self.drip_removal_target = None
 			self.learning_system.add_notification("Removal cancelled.")
 		
-		# Main game state updates
 		if self.settings_menu.is_open:
 			self.settings_menu.update()
 		elif self.skill_tree.is_open:
 			self.skill_tree.update()
 		elif self.inventory.is_open:
-			# Inventory is open - update it and handle text input events
 			for event in events:
 				self.inventory.handle_text_input(event)
 			self.inventory.update()
 		elif self.knowledge_book.is_open:
-			# Book is open - update and display it
 			self.knowledge_book.update()
 			self.knowledge_book.display()
 		elif self.shop_active:
@@ -409,19 +341,16 @@ class Level:
 			self.all_sprites.update(dt)
 			self.plant_collision()
 
-		# weather & overlay (drawn before menus so menus appear on top)
 		self.overlay.display()
 		if self.raining and not self.shop_active:
 			self.rain.update()
 		self.sky.display(dt)
 		
-		# Check for automatic day transition when night ends
 		if self.sky.night_complete:
 			self.sky.night_complete = False
 			self.reset()
 			self.sky.reset_cycle()
 
-		# Draw menus/book LAST so they appear on top of everything
 		if self.settings_menu.is_open:
 			self.settings_menu.display()
 		elif self.skill_tree.is_open:
@@ -433,7 +362,6 @@ class Level:
 		elif self.shop_active:
 			self.menu.update()
 
-		# transition overlay
 		if self.player.sleep:
 			self.transition.play()
 

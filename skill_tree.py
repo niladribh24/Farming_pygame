@@ -1,14 +1,9 @@
-# Skill Tree UI - Quiz system for unlocking skills
-# Press T to open the skill book during gameplay
 
 import pygame
 from settings import *
 from timer import Timer
 from knowledge_base import ACHIEVEMENT_DEFINITIONS
 
-# ==============================================================================
-# QUIZ DATA - Questions about sustainable agriculture (3 questions per level)
-# ==============================================================================
 
 SKILL_QUIZZES = {
     "water_mastery": {
@@ -179,12 +174,6 @@ SKILL_QUIZZES = {
 
 
 class SkillTreeUI:
-    """
-    Skill Tree book UI with two pages:
-    - Page 1: Quizzes to complete for skills
-    - Page 2: Visual skill tree showing progress
-    Press T to open, ESC to close
-    """
     
     def __init__(self, player):
         self.display_surface = pygame.display.get_surface()
@@ -193,13 +182,11 @@ class SkillTreeUI:
         self.title_font = pygame.font.Font('./font/LycheeSoda.ttf', 32)
         self.small_font = pygame.font.Font('./font/LycheeSoda.ttf', 18)
         
-        # UI State
         self.is_open = False
         self.current_tab = 0  # 0: Quizzes, 1: Skill Tree, 2: Achievements
         self.tabs = ["Quizzes", "Skill Tree", "Achievements"]
         self.learning_system = None  # Set later for achievements
         
-        # Quiz state
         self.selected_quiz = 0
         self.quiz_keys = list(SKILL_QUIZZES.keys())
         self.in_quiz = False
@@ -213,17 +200,14 @@ class SkillTreeUI:
         self.show_level_complete = False  # Show after all 3 questions
         self.level_passed = False
         
-        # Timer
         self.timer = Timer(200)
         self.open_time = 0
         
-        # Book dimensions
         self.book_width = 800
         self.book_height = 550
         self.book_x = (SCREEN_WIDTH - self.book_width) // 2
         self.book_y = (SCREEN_HEIGHT - self.book_height) // 2
         
-        # Colors
         self.bg_color = (45, 35, 25)
         self.border_color = (139, 90, 43)
         self.highlight_color = (100, 180, 100)
@@ -231,7 +215,6 @@ class SkillTreeUI:
         self.unlocked_color = (80, 200, 80)
     
     def toggle(self):
-        """Open/close the skill book"""
         self.is_open = not self.is_open
         if self.is_open:
             self.open_time = pygame.time.get_ticks()
@@ -240,7 +223,6 @@ class SkillTreeUI:
             self.show_level_complete = False
     
     def update(self):
-        """Handle input"""
         if not self.is_open:
             return
         
@@ -248,12 +230,10 @@ class SkillTreeUI:
         self.timer.update()
         current_time = pygame.time.get_ticks()
         
-        # Cooldown after opening
         if current_time - self.open_time < 300:
             return
         
         if not self.timer.active:
-            # Close book
             if keys[pygame.K_ESCAPE]:
                 if self.in_quiz:
                     self.in_quiz = False
@@ -265,7 +245,6 @@ class SkillTreeUI:
                 return
             
             if self.show_level_complete:
-                # After level complete, continue to exit
                 if keys[pygame.K_RETURN] or keys[pygame.K_SPACE]:
                     self.show_level_complete = False
                     self.in_quiz = False
@@ -273,20 +252,17 @@ class SkillTreeUI:
                 return
             
             if self.show_result:
-                # After each question result, go to next question or complete
                 if keys[pygame.K_RETURN] or keys[pygame.K_SPACE]:
                     self.show_result = False
                     self.current_question_index += 1
                     self.selected_option = 0
                     
-                    # Check if all 3 questions done
                     if self.current_question_index >= 3:
                         self._complete_level()
                     self.timer.activate()
                 return
             
             if self.in_quiz:
-                # Quiz navigation
                 if keys[pygame.K_UP]:
                     self.selected_option = max(0, self.selected_option - 1)
                     self.timer.activate()
@@ -297,13 +273,11 @@ class SkillTreeUI:
                     self._submit_answer()
                     self.timer.activate()
             else:
-                # Tab switching (3 tabs now)
                 if keys[pygame.K_TAB]:
                     self.current_tab = (self.current_tab + 1) % 3
                     self.timer.activate()
                 
                 if self.current_tab == 0:  # Quizzes tab
-                    # Quiz selection
                     if keys[pygame.K_UP]:
                         self.selected_quiz = max(0, self.selected_quiz - 1)
                         self.timer.activate()
@@ -315,7 +289,6 @@ class SkillTreeUI:
                         self.timer.activate()
     
     def _get_quiz_progress(self, quiz_key):
-        """Get current level unlocked for a quiz (0 = none, 1-3 = level)"""
         quiz = SKILL_QUIZZES[quiz_key]
         if quiz["skill_type"] == "water":
             return self.player.water_skill_level
@@ -326,7 +299,6 @@ class SkillTreeUI:
         return 0
     
     def _start_quiz(self):
-        """Start a quiz at the next unlockable level"""
         quiz_key = self.quiz_keys[self.selected_quiz]
         current_level = self._get_quiz_progress(quiz_key)
         
@@ -343,7 +315,6 @@ class SkillTreeUI:
         self.show_level_complete = False
     
     def _submit_answer(self):
-        """Check the answer for current question"""
         quiz = SKILL_QUIZZES[self.current_quiz_key]
         level_data = quiz["levels"][self.current_level]
         question_data = level_data["questions"][self.current_question_index]
@@ -358,14 +329,11 @@ class SkillTreeUI:
         self.show_result = True
     
     def _complete_level(self):
-        """Called after all 3 questions answered"""
-        # Need at least 2 out of 3 correct to pass
         self.level_passed = (self.correct_answers >= 2)
         self.show_level_complete = True
         
         if self.level_passed:
             quiz = SKILL_QUIZZES[self.current_quiz_key]
-            # Award skill based on type
             if quiz["skill_type"] == "water":
                 self.player.water_skill_level = self.current_level
             elif quiz["skill_type"] == "speed":
@@ -375,16 +343,13 @@ class SkillTreeUI:
             self.player.apply_skill_effects()
     
     def display(self):
-        """Render the skill book"""
         if not self.is_open:
             return
         
-        # Dim background
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 200))
         self.display_surface.blit(overlay, (0, 0))
         
-        # Book background
         book_rect = pygame.Rect(self.book_x, self.book_y, self.book_width, self.book_height)
         pygame.draw.rect(self.display_surface, self.bg_color, book_rect, 0, 10)
         pygame.draw.rect(self.display_surface, self.border_color, book_rect, 4, 10)
@@ -396,15 +361,12 @@ class SkillTreeUI:
         elif self.in_quiz:
             self._render_quiz()
         else:
-            # Title
             title = self.title_font.render("Skill Book", False, (255, 230, 180))
             title_rect = title.get_rect(midtop=(SCREEN_WIDTH // 2, self.book_y + 15))
             self.display_surface.blit(title, title_rect)
             
-            # Tab buttons
             self._render_tabs()
             
-            # Content
             if self.current_tab == 0:
                 self._render_quizzes_tab()
             elif self.current_tab == 1:
@@ -412,14 +374,12 @@ class SkillTreeUI:
             else:
                 self._render_achievements_tab()
             
-            # Help text
             help_text = "TAB: Switch Page | Up/Down: Select | ENTER: Start | ESC: Close"
             help_surf = self.small_font.render(help_text, False, (150, 150, 150))
             help_rect = help_surf.get_rect(midbottom=(SCREEN_WIDTH // 2, self.book_y + self.book_height - 10))
             self.display_surface.blit(help_surf, help_rect)
     
     def _render_tabs(self):
-        """Render the tab buttons"""
         tab_y = self.book_y + 55
         tab_width = 150
         
@@ -440,17 +400,14 @@ class SkillTreeUI:
             self.display_surface.blit(text, text_rect)
     
     def _render_quizzes_tab(self):
-        """Render the quizzes list"""
         start_y = self.book_y + 110
         
         for i, quiz_key in enumerate(self.quiz_keys):
             quiz = SKILL_QUIZZES[quiz_key]
             progress = self._get_quiz_progress(quiz_key)
             
-            # Entry rect - taller to show reward info
             entry_rect = pygame.Rect(self.book_x + 50, start_y + i * 130, self.book_width - 100, 115)
             
-            # Highlight selected
             if i == self.selected_quiz:
                 pygame.draw.rect(self.display_surface, (70, 60, 50), entry_rect, 0, 8)
                 pygame.draw.rect(self.display_surface, self.highlight_color, entry_rect, 3, 8)
@@ -458,15 +415,12 @@ class SkillTreeUI:
                 pygame.draw.rect(self.display_surface, (55, 45, 35), entry_rect, 0, 8)
                 pygame.draw.rect(self.display_surface, (100, 80, 60), entry_rect, 2, 8)
             
-            # Quiz name
             name_surf = self.font.render(quiz["name"], False, (255, 220, 100))
             self.display_surface.blit(name_surf, (entry_rect.left + 20, entry_rect.top + 10))
             
-            # Description
             desc_surf = self.small_font.render(quiz["description"], False, (200, 200, 200))
             self.display_surface.blit(desc_surf, (entry_rect.left + 20, entry_rect.top + 38))
             
-            # Skill rewards info (handle variable number of rewards)
             rewards = quiz['skill_rewards']
             if len(rewards) == 1:
                 reward_text = f"Reward: {rewards[0]}"
@@ -477,7 +431,6 @@ class SkillTreeUI:
             reward_surf = self.small_font.render(reward_text, False, (100, 200, 255))
             self.display_surface.blit(reward_surf, (entry_rect.left + 20, entry_rect.top + 58))
             
-            # Progress indicators (circles based on number of levels)
             num_levels = len(quiz["levels"])
             for lvl in range(1, num_levels + 1):
                 circle_x = entry_rect.right - 40 - (num_levels - lvl) * 35
@@ -495,7 +448,6 @@ class SkillTreeUI:
                 lvl_rect = lvl_text.get_rect(center=(circle_x, circle_y))
                 self.display_surface.blit(lvl_text, lvl_rect)
             
-            # Next level hint
             if progress < num_levels:
                 hint_text = f"Next: Level {progress + 1} (3 questions, need 2 correct)"
                 hint_surf = self.small_font.render(hint_text, False, (150, 200, 150))
@@ -505,11 +457,9 @@ class SkillTreeUI:
                 self.display_surface.blit(complete_surf, (entry_rect.left + 20, entry_rect.bottom - 25))
     
     def _render_skill_tree_tab(self):
-        """Render the skill tree diagram - Farmer at top, skills branch down"""
         center_x = SCREEN_WIDTH // 2
         start_y = self.book_y + 100
         
-        # Root node (Farmer) at TOP
         root_rect = pygame.Rect(center_x - 60, start_y, 120, 40)
         pygame.draw.rect(self.display_surface, (100, 80, 60), root_rect, 0, 8)
         pygame.draw.rect(self.display_surface, self.border_color, root_rect, 2, 8)
@@ -517,30 +467,25 @@ class SkillTreeUI:
         root_text_rect = root_text.get_rect(center=root_rect.center)
         self.display_surface.blit(root_text, root_text_rect)
         
-        # Connecting lines from Farmer to branches
         branch_start_y = start_y + 50
         pygame.draw.line(self.display_surface, (139, 90, 43),
                         (center_x, start_y + 40), (center_x, branch_start_y + 10), 4)
         
-        # Horizontal line connecting to both branches
         water_x = center_x - 160
         speed_x = center_x + 160
         pygame.draw.line(self.display_surface, (139, 90, 43),
                         (water_x, branch_start_y + 10), (speed_x, branch_start_y + 10), 4)
         
-        # Vertical lines down to branch titles
         pygame.draw.line(self.display_surface, (139, 90, 43),
                         (water_x, branch_start_y + 10), (water_x, branch_start_y + 30), 4)
         pygame.draw.line(self.display_surface, (139, 90, 43),
                         (speed_x, branch_start_y + 10), (speed_x, branch_start_y + 30), 4)
         
-        # Water Skills title
         water_title_y = branch_start_y + 55
         water_title_surf = self.font.render("Water Skills", False, (70, 150, 255))
         water_title_rect = water_title_surf.get_rect(center=(water_x, water_title_y))
         self.display_surface.blit(water_title_surf, water_title_rect)
         
-        # Horizontal line from Water Skills title to two branches
         sub_branch_y = water_title_y + 25
         water_sub_left = water_x - 70  # Water 1,2,3 branch
         water_sub_right = water_x + 70  # Drip Irrigation branch
@@ -550,13 +495,11 @@ class SkillTreeUI:
         pygame.draw.line(self.display_surface, (139, 90, 43),
                         (water_x, water_title_y + 15), (water_x, sub_branch_y), 3)
         
-        # Vertical lines down from horizontal branch
         pygame.draw.line(self.display_surface, (139, 90, 43),
                         (water_sub_left, sub_branch_y), (water_sub_left, sub_branch_y + 20), 3)
         pygame.draw.line(self.display_surface, (139, 90, 43),
                         (water_sub_right, sub_branch_y), (water_sub_right, sub_branch_y + 20), 3)
         
-        # Water 1, 2, 3 nodes (left sub-branch)
         for i, skill_name in enumerate(["Water 1 (100)", "Water 2 (150)", "Water 3 (200)"]):
             node_y = sub_branch_y + 45 + i * 55
             node_rect = pygame.Rect(water_sub_left - 60, node_y, 120, 32)
@@ -576,12 +519,10 @@ class SkillTreeUI:
             skill_rect = skill_text.get_rect(center=node_rect.center)
             self.display_surface.blit(skill_text, skill_rect)
             
-            # Connector line
             if i < 2:
                 pygame.draw.line(self.display_surface, (100, 80, 60),
                                 (water_sub_left, node_y + 32), (water_sub_left, node_y + 55), 2)
         
-        # Drip Irrigation node (right sub-branch)
         drip_y = sub_branch_y + 45
         drip_unlocked = self.player.drip_irrigation_unlocked
         drip_rect = pygame.Rect(water_sub_right - 65, drip_y, 130, 32)
@@ -598,23 +539,18 @@ class SkillTreeUI:
         drip_text_rect = drip_text.get_rect(center=drip_rect.center)
         self.display_surface.blit(drip_text, drip_text_rect)
         
-        # Speed Skills Branch (right) - skills go DOWN
         self._render_skill_branch_down(speed_x, branch_start_y + 55, "Speed Skills",
                                  ["Speed 1 (110%)", "Speed 2 (120%)", "Speed 3 (130%)"],
                                  self.player.speed_skill_level, (255, 180, 70))
     
     def _render_skill_branch_down(self, x, start_y, title, skills, current_level, color):
-        """Render a skill branch going downward (like tree roots)"""
-        # Title
         title_surf = self.font.render(title, False, color)
         title_rect = title_surf.get_rect(center=(x, start_y))
         self.display_surface.blit(title_surf, title_rect)
         
-        # Vertical connector line going DOWN
         pygame.draw.line(self.display_surface, (100, 80, 60),
                         (x, start_y + 20), (x, start_y + 200), 3)
         
-        # Skill nodes going DOWN
         for i, skill_name in enumerate(skills):
             node_y = start_y + 45 + i * 60
             node_rect = pygame.Rect(x - 70, node_y, 140, 35)
@@ -625,7 +561,6 @@ class SkillTreeUI:
             if is_unlocked:
                 pygame.draw.rect(self.display_surface, color, node_rect, 0, 6)
                 text_color = (255, 255, 255)
-                # Glow effect
                 glow_rect = node_rect.inflate(6, 6)
                 pygame.draw.rect(self.display_surface, (*color, 100), glow_rect, 2, 8)
             else:
@@ -637,16 +572,12 @@ class SkillTreeUI:
             skill_rect = skill_text.get_rect(center=node_rect.center)
             self.display_surface.blit(skill_text, skill_rect)
     
-    # Keep old method for compatibility but it's no longer used
     def _render_skill_branch(self, x, start_y, title, skills, current_level, color):
-        """Legacy method - use _render_skill_branch_down instead"""
         self._render_skill_branch_down(x, start_y, title, skills, current_level, color)
     
     def _render_achievements_tab(self):
-        """Render the achievements page"""
         start_y = self.book_y + 100
         
-        # Get unlocked achievements from learning system
         unlocked = set()
         if self.learning_system:
             unlocked = self.learning_system.achievements
@@ -660,11 +591,9 @@ class SkillTreeUI:
         for ach_id, ach_data in ACHIEVEMENT_DEFINITIONS.items():
             is_unlocked = ach_id in unlocked
             
-            # Calculate position
             x = self.book_x + 50 + col * item_width
             y = start_y + row * item_height
             
-            # Entry rect
             entry_rect = pygame.Rect(x, y, item_width - 10, item_height - 10)
             
             if is_unlocked:
@@ -678,45 +607,37 @@ class SkillTreeUI:
                 icon = "🔒"
                 name_color = (120, 120, 120)
             
-            # Icon and name
             name_text = f"{icon} {ach_data['name']}"
             name_surf = self.font.render(name_text, False, name_color)
             self.display_surface.blit(name_surf, (entry_rect.left + 10, entry_rect.top + 10))
             
-            # Description
             desc_color = (180, 180, 180) if is_unlocked else (100, 100, 100)
             desc_surf = self.small_font.render(ach_data['description'], False, desc_color)
             self.display_surface.blit(desc_surf, (entry_rect.left + 10, entry_rect.top + 40))
             
-            # Move to next position
             col += 1
             if col >= max_cols:
                 col = 0
                 row += 1
     
     def _render_quiz(self):
-        """Render the active quiz question"""
         quiz = SKILL_QUIZZES[self.current_quiz_key]
         level_data = quiz["levels"][self.current_level]
         question_data = level_data["questions"][self.current_question_index]
         
-        # Title with question counter
         title = self.title_font.render(f"{quiz['name']} - Level {self.current_level}", False, (255, 220, 100))
         title_rect = title.get_rect(midtop=(SCREEN_WIDTH // 2, self.book_y + 15))
         self.display_surface.blit(title, title_rect)
         
-        # Question counter
         counter_text = f"Question {self.current_question_index + 1}/3"
         counter_surf = self.font.render(counter_text, False, (200, 200, 200))
         counter_rect = counter_surf.get_rect(midtop=(SCREEN_WIDTH // 2, self.book_y + 55))
         self.display_surface.blit(counter_surf, counter_rect)
         
-        # Question
         question = self.font.render(question_data["question"], False, (255, 255, 255))
         question_rect = question.get_rect(midtop=(SCREEN_WIDTH // 2, self.book_y + 95))
         self.display_surface.blit(question, question_rect)
         
-        # Options
         options_start_y = self.book_y + 150
         for i, option in enumerate(question_data["options"]):
             option_rect = pygame.Rect(self.book_x + 100, options_start_y + i * 65, self.book_width - 200, 50)
@@ -732,20 +653,17 @@ class SkillTreeUI:
             option_text_rect = option_text.get_rect(midleft=(option_rect.left + 20, option_rect.centery))
             self.display_surface.blit(option_text, option_text_rect)
         
-        # Correct count so far
         score_text = f"Correct so far: {self.correct_answers}/3"
         score_surf = self.small_font.render(score_text, False, (150, 255, 150))
         score_rect = score_surf.get_rect(midbottom=(SCREEN_WIDTH // 2, self.book_y + self.book_height - 50))
         self.display_surface.blit(score_surf, score_rect)
         
-        # Help
         help_text = "Up/Down: Select | ENTER: Submit | ESC: Back"
         help_surf = self.small_font.render(help_text, False, (150, 150, 150))
         help_rect = help_surf.get_rect(midbottom=(SCREEN_WIDTH // 2, self.book_y + self.book_height - 15))
         self.display_surface.blit(help_surf, help_rect)
     
     def _render_question_result(self):
-        """Render result after answering a question"""
         if self.result_correct:
             title = self.title_font.render("CORRECT!", False, (100, 255, 100))
         else:
@@ -754,7 +672,6 @@ class SkillTreeUI:
         title_rect = title.get_rect(center=(SCREEN_WIDTH // 2, self.book_y + 150))
         self.display_surface.blit(title, title_rect)
         
-        # Show correct answer
         quiz = SKILL_QUIZZES[self.current_quiz_key]
         level_data = quiz["levels"][self.current_level]
         question_data = level_data["questions"][self.current_question_index]
@@ -769,20 +686,17 @@ class SkillTreeUI:
         answer_rect = answer_surf.get_rect(center=(SCREEN_WIDTH // 2, self.book_y + 220))
         self.display_surface.blit(answer_surf, answer_rect)
         
-        # Progress
         progress_text = f"Score: {self.correct_answers}/3 (Need 2 to pass)"
         progress_surf = self.font.render(progress_text, False, (200, 200, 200))
         progress_rect = progress_surf.get_rect(center=(SCREEN_WIDTH // 2, self.book_y + 280))
         self.display_surface.blit(progress_surf, progress_rect)
         
-        # Continue prompt
         continue_text = "Press ENTER or SPACE to continue"
         continue_surf = self.small_font.render(continue_text, False, (200, 200, 200))
         continue_rect = continue_surf.get_rect(center=(SCREEN_WIDTH // 2, self.book_y + self.book_height - 50))
         self.display_surface.blit(continue_surf, continue_rect)
     
     def _render_level_complete(self):
-        """Render level completion screen"""
         quiz = SKILL_QUIZZES[self.current_quiz_key]
         
         if self.level_passed:
@@ -807,14 +721,12 @@ class SkillTreeUI:
         reward_rect = reward_surf.get_rect(center=(SCREEN_WIDTH // 2, self.book_y + 270))
         self.display_surface.blit(reward_surf, reward_rect)
         
-        # Continue prompt
         continue_text = "Press ENTER or SPACE to continue"
         continue_surf = self.small_font.render(continue_text, False, (200, 200, 200))
         continue_rect = continue_surf.get_rect(center=(SCREEN_WIDTH // 2, self.book_y + self.book_height - 50))
         self.display_surface.blit(continue_surf, continue_rect)
 
 
-# Singleton
 _skill_tree_instance = None
 
 def get_skill_tree(player=None):

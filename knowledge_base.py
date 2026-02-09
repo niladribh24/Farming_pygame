@@ -1,8 +1,3 @@
-# ==============================================================================
-# CROP DATA DICTIONARY
-# Each crop has water needs and soil effects for consequence-based gameplay
-# Researched real-world values for educational accuracy
-# ==============================================================================
 CROP_DATA = {
     "corn": {
         "water_need": 2,          # Ideal water per day
@@ -61,10 +56,6 @@ CROP_DATA = {
     }
 }
 
-# ==============================================================================
-# WEATHER EFFECTS DICTIONARY
-# Used with Queue (deque) for FIFO weather event processing
-# ==============================================================================
 WEATHER_EFFECTS = {
     "rain": {
         "description": "Rainy day - crops auto-watered",
@@ -96,13 +87,7 @@ WEATHER_EFFECTS = {
     }
 }
 
-# ==============================================================================
-# FERTILIZER DATA DICTIONARY (Researched Real-World Values)
-# NPK = Nitrogen-Phosphorus-Potassium ratio
-# Trade-off between short-term growth and long-term soil health
-# ==============================================================================
 FERTILIZER_DATA = {
-    # ORGANIC FERTILIZERS (Sustainable)
     "compost": {
         "name": "Compost",
         "type": "organic",
@@ -164,7 +149,6 @@ FERTILIZER_DATA = {
         "real_info": "From burned wood, also raises soil pH"
     },
     
-    # CHEMICAL FERTILIZERS (Faster but harmful long-term)
     "npk_10_10_10": {
         "name": "NPK 10-10-10",
         "type": "chemical",
@@ -203,7 +187,6 @@ FERTILIZER_DATA = {
     }
 }
 
-# Quick lookup for crop-specific fertilizer recommendations
 CROP_FERTILIZER_GUIDE = {
     "tomato": {
         "recommended": ["compost", "bone_meal", "fish_emulsion"],
@@ -232,10 +215,6 @@ CROP_FERTILIZER_GUIDE = {
     }
 }
 
-# ==============================================================================
-# SOIL HEALTH IMPACT RULES
-# Central reference for all soil health changes
-# ==============================================================================
 SOIL_IMPACTS = {
     "correct_water": {"soil": 2, "score": 1, "message": "✔ Correct watering (+1)"},
     "over_water": {"soil": -5, "score": -5, "message": "✖ Over-watering detected (-5)"},
@@ -246,10 +225,6 @@ SOIL_IMPACTS = {
     "rain_overwater": {"soil": -3, "score": -4, "message": "✖ Watered during rain (-4)"}
 }
 
-# ==============================================================================
-# SKILL TREE DEFINITIONS (for Tree data structure)
-# Hierarchical unlock system
-# ==============================================================================
 SKILL_DEFINITIONS = {
     "sustainable_farming": {
         "name": "Sustainable Farming",
@@ -287,10 +262,6 @@ SKILL_DEFINITIONS = {
     }
 }
 
-# ==============================================================================
-# ACHIEVEMENT DEFINITIONS (for Set data structure)
-# Fast membership check for unlocked achievements
-# ==============================================================================
 ACHIEVEMENT_DEFINITIONS = {
     "eco_farmer": {
         "name": "Eco Farmer",
@@ -324,19 +295,12 @@ ACHIEVEMENT_DEFINITIONS = {
     }
 }
 
-# ==============================================================================
-# INITIAL GAME VALUES
-# ==============================================================================
 INITIAL_SOIL_HEALTH = 0
 MIN_SOIL_HEALTH = 0
 MAX_SOIL_HEALTH = 100
 INITIAL_WATER_RESERVE = 10
 MAX_WATER_RESERVE = 50
 
-# ==============================================================================
-# IRRIGATION TECHNIQUES
-# Different watering methods with efficiency bonuses
-# ==============================================================================
 IRRIGATION_DATA = {
     "manual": {
         "name": "Manual Watering",
@@ -364,10 +328,6 @@ IRRIGATION_DATA = {
     }
 }
 
-# ==============================================================================
-# PLACEABLE EQUIPMENT
-# Items that can be bought and placed in the field
-# ==============================================================================
 EQUIPMENT_DATA = {
     "drip_emitter": {
         "name": "Drip Emitter",

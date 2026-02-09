@@ -16,7 +16,6 @@ class Game:
 			events = pygame.event.get()
 			for event in events:
 				if event.type == pygame.QUIT:
-					# Save before exit
 					self.level.save()
 					pygame.quit()
 					sys.exit()
@@ -24,7 +23,6 @@ class Game:
 			dt = self.clock.tick() / 1000
 			self.level.run(dt, events)
             
-			# Check for game reset
 			if getattr(self.level, 'reset_pending', False):
 				self.level = Level()
 				sm_module.settings_menu = None # Reset singleton

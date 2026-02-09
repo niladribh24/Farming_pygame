@@ -1,5 +1,3 @@
-# Settings Menu - Adjust game settings like volume
-# Press P to open settings during gameplay
 
 import pygame
 import os
@@ -7,10 +5,6 @@ from settings import *
 from timer import Timer
 
 class SettingsMenu:
-    """
-    Settings menu for adjusting game options like volume.
-    Press P to open, Escape to close.
-    """
     
     def __init__(self, level):
         self.display_surface = pygame.display.get_surface()
@@ -19,29 +13,23 @@ class SettingsMenu:
         self.title_font = pygame.font.Font('./font/LycheeSoda.ttf', 32)
         self.small_font = pygame.font.Font('./font/LycheeSoda.ttf', 18)
         
-        # Menu state
         self.is_open = False
         self.open_time = 0
         
-        # Settings
         self.music_volume = 0
         self.sfx_volume = 0.2
         
-        # UI - make it wider for controls
         self.width = 600
         self.height = 480
         self.menu_x = (SCREEN_WIDTH - self.width) // 2
         self.menu_y = (SCREEN_HEIGHT - self.height) // 2
         
-        # Tabs
         self.tabs = ['AUDIO', 'CONTROLS', 'GAME']
         self.current_tab = 0
         
-        # Audio options
         self.audio_options = ['Music Volume', 'SFX Volume']
         self.selected = 0
         
-        # Controls list
         self.controls = [
             ('W/A/S/D', 'Move player'),
             ('Space', 'Use current tool'),
@@ -63,7 +51,6 @@ class SettingsMenu:
         self.controls_scroll = 0  # Scroll offset for controls
         self.max_visible_controls = 10  # Max controls visible at once
         
-        # Timer
         self.timer = Timer(150)
     
     def toggle(self):
@@ -83,7 +70,6 @@ class SettingsMenu:
             return
         
         if not self.timer.active:
-            # Switch tabs
             if keys[pygame.K_LEFT]:
                  self.current_tab = (self.current_tab - 1) % len(self.tabs)
                  self.selected = 0
@@ -93,7 +79,6 @@ class SettingsMenu:
                  self.selected = 0
                  self.timer.activate()
             
-            # Audio tab navigation
             if self.current_tab == 0:
                 if keys[pygame.K_UP]:
                     self.selected = max(0, self.selected - 1)
@@ -102,7 +87,6 @@ class SettingsMenu:
                     self.selected = min(len(self.audio_options) - 1, self.selected + 1)
                     self.timer.activate()
                 
-                # Adjust volume with A/D keys (since left/right switch tabs)
                 if keys[pygame.K_a]:
                     self._adjust_setting(-0.1)
                     self.timer.activate()
@@ -110,7 +94,6 @@ class SettingsMenu:
                     self._adjust_setting(0.1)
                     self.timer.activate()
             
-            # Controls tab scrolling
             if self.current_tab == 1:
                 if keys[pygame.K_UP]:
                     self.controls_scroll = max(0, self.controls_scroll - 1)
@@ -120,13 +103,11 @@ class SettingsMenu:
                     self.controls_scroll = min(max_scroll, self.controls_scroll + 1)
                     self.timer.activate()
             
-            # Game tab navigation
             if self.current_tab == 2:
                  if keys[pygame.K_SPACE] or keys[pygame.K_RETURN]:
                      self.timer.activate()
                      self._reset_game()
             
-            # Close
             if keys[pygame.K_ESCAPE] or keys[pygame.K_p]:
                 self.is_open = False
                 self.timer.activate()
@@ -144,24 +125,19 @@ class SettingsMenu:
         if not self.is_open:
             return
         
-        # Dim background
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 200))
         self.display_surface.blit(overlay, (0, 0))
         
-        # Menu background
         menu_rect = pygame.Rect(self.menu_x, self.menu_y, self.width, self.height)
         pygame.draw.rect(self.display_surface, (50, 45, 55), menu_rect, 0, 12)
         pygame.draw.rect(self.display_surface, (100, 100, 120), menu_rect, 3, 12)
         
-        # Title
         title = self.title_font.render("⚙️ Settings", False, (255, 255, 255))
         self.display_surface.blit(title, (self.menu_x + 20, self.menu_y + 15))
         
-        # Tabs
         self._draw_tabs()
         
-        # Content based on tab
         if self.current_tab == 0:
             self._draw_audio_tab()
         elif self.current_tab == 1:
@@ -169,7 +145,6 @@ class SettingsMenu:
         else:
             self._draw_game_tab()
         
-        # Help
         if self.current_tab == 0:
             help_text = "A/D: Adjust Volume  |  ESC: Close"
         elif self.current_tab == 1:
@@ -215,7 +190,6 @@ class SettingsMenu:
             text = self.font.render(option, False, color)
             self.display_surface.blit(text, (self.menu_x + 30, y + 5))
             
-            # Slider
             value = self.music_volume if option == 'Music Volume' else self.sfx_volume
             self._draw_slider(y + 5, value, is_selected)
             
@@ -245,39 +219,32 @@ class SettingsMenu:
         col1_x = self.menu_x + 30
         col2_x = self.menu_x + 180
         
-        # Header
         header1 = self.small_font.render("KEY", False, (255, 220, 100))
         header2 = self.small_font.render("ACTION", False, (255, 220, 100))
         self.display_surface.blit(header1, (col1_x, y))
         self.display_surface.blit(header2, (col2_x, y))
         y += 25
         
-        # Divider
         pygame.draw.line(self.display_surface, (100, 100, 120),
             (col1_x, y), (self.menu_x + self.width - 30, y), 2)
         y += 10
         
-        # Show scroll indicator if needed
         if self.controls_scroll > 0:
             arrow_up = self.small_font.render("^ More above", False, (150, 150, 150))
             self.display_surface.blit(arrow_up, (self.menu_x + self.width - 120, self.menu_y + 105))
         
-        # Controls list (scrollable)
         visible_controls = self.controls[self.controls_scroll:self.controls_scroll + self.max_visible_controls]
         for key, action in visible_controls:
-            # Key box
             key_surf = self.small_font.render(key, False, (255, 255, 255))
             key_rect = pygame.Rect(col1_x - 5, y - 2, 130, 22)
             pygame.draw.rect(self.display_surface, (60, 55, 70), key_rect, 0, 4)
             self.display_surface.blit(key_surf, (col1_x, y))
             
-            # Action
             action_surf = self.small_font.render(action, False, (200, 200, 200))
             self.display_surface.blit(action_surf, (col2_x, y))
             
             y += 26
         
-        # Show scroll indicator if more below
         if self.controls_scroll + self.max_visible_controls < len(self.controls):
             arrow_down = self.small_font.render("v More below", False, (150, 150, 150))
             self.display_surface.blit(arrow_down, (self.menu_x + self.width - 120, y - 10))
@@ -285,17 +252,14 @@ class SettingsMenu:
     def _draw_game_tab(self):
         y = self.menu_y + 150
         
-        # Warning text
         warning = self.font.render("WARNING: This cannot be undone!", False, (255, 100, 100))
         warning_rect = warning.get_rect(center=(self.menu_x + self.width // 2, y))
         self.display_surface.blit(warning, warning_rect)
         
         y += 60
         
-        # New Game Button
         btn_rect = pygame.Rect(self.menu_x + self.width // 2 - 100, y, 200, 50)
         
-        # Highlight logic (always selected as it's the only option)
         pygame.draw.rect(self.display_surface, (200, 80, 80), btn_rect, 0, 8)
         pygame.draw.rect(self.display_surface, (255, 255, 255), btn_rect, 2, 8)
         
@@ -304,7 +268,6 @@ class SettingsMenu:
         self.display_surface.blit(btn_text, btn_text_rect)
 
     def _reset_game(self):
-        # Delete save
         if os.path.exists('savegame.json'):
             try:
                 os.remove('savegame.json')
@@ -312,12 +275,10 @@ class SettingsMenu:
             except Exception as e:
                 print(f"Error deleting save: {e}")
         
-        # Flag level for reset
         self.level.reset_pending = True
         self.is_open = False
 
 
-# Singleton
 settings_menu = None
 
 def get_settings_menu(level):

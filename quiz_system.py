@@ -1,10 +1,5 @@
 
-# Quiz System Module
-# Manages sustainability quizzes, badges, and rewards.
 
-# DATA STRUCTURE: Dictionary (Questions)
-# Key: Quiz ID
-# Value: Quiz Topic data (title, questions, badge, description)
 QUIZZES = {
     "water_conservation": {
         "title": "Water Conservation",
@@ -143,16 +138,12 @@ QUIZZES = {
     }
 }
 
-# DATA STRUCTURE: Set (Unique Badges)
-# Stores earned badges. Sets ensure no duplicates and O(1) lookup.
 earned_badges = set()
 
 def has_badge(badge_name):
-    """Check if player has a specific badge"""
     return badge_name in earned_badges
 
 def get_shop_discount():
-    """Calculate discount multiplier based on badges"""
     discount = 1.0
     
     if "Water Saver" in earned_badges:

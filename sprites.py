@@ -20,11 +20,9 @@ class Interaction(Generic):
 class Water(Generic):
 	def __init__(self, pos, frames, groups):
 
-		#animation setup
 		self.frames = frames
 		self.frame_index = 0
 
-		# sprite setup
 		super().__init__(
 				pos = pos, 
 				surf = self.frames[self.frame_index], 
@@ -51,7 +49,6 @@ class Particle(Generic):
 		self.start_time = pygame.time.get_ticks()
 		self.duration = duration
 
-		# white surface 
 		mask_surf = pygame.mask.from_surface(self.image)
 		new_surf = mask_surf.to_surface()
 		new_surf.set_colorkey((0,0,0))
@@ -67,7 +64,6 @@ class Tree(Generic):
 		super().__init__(pos, surf, groups)
 		self.all_sprites = all_sprites
 
-		# tree attributes
 		self.health = 5
 		self.alive = True
 		stump_path = f'./graphics/stumps/{"small" if name == "Small" else "large"}.png'
@@ -75,7 +71,6 @@ class Tree(Generic):
 		self.original_surf = surf
 		self.respawn_timer = 0
 
-		# apples
 		self.apple_surf = pygame.image.load('./graphics/fruit/apple.png')
 		self.apple_pos = APPLE_POS[name]
 		self.apple_sprites = pygame.sprite.Group()
@@ -83,18 +78,14 @@ class Tree(Generic):
 
 		self.player_add = player_add
 
-		# sounds
 		self.axe_sound = pygame.mixer.Sound('./audio/axe.mp3')
 
 	def damage(self):
 		
-		# damaging the tree
 		self.health -= 1
 
-		# play sound
 		self.axe_sound.play()
 
-		# remove an apple
 		if len(self.apple_sprites.sprites()) > 0:
 			random_apple = choice(self.apple_sprites.sprites())
 			Particle(
@@ -115,7 +106,6 @@ class Tree(Generic):
 			self.player_add('wood')
 			self.respawn_timer = 0
 			
-			# Auto-collect remaining apples
 			for apple in self.apple_sprites.sprites():
 				Particle(apple.rect.topleft, apple.image, self.all_sprites, LAYERS['fruit'])
 				self.player_add('apple')
@@ -138,7 +128,6 @@ class Tree(Generic):
 		if not self.alive:
 			return
 		
-		# Limit apples to max 4 as requested
 		fruit_positions = self.apple_pos
 		if len(fruit_positions) > 4:
 			import random
