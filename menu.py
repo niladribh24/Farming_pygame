@@ -64,6 +64,11 @@ class Menu:
         self.notifications = []
         self.notification_duration = 2000  # 2 seconds
 
+    def show_notification(self, message):
+        """Show a notification message in the menu"""
+        import pygame
+        self.notifications.append((message, pygame.time.get_ticks()))
+
     def _build_item_lists(self):
         """Build item lists for each tab"""
         self.tab_items = {
