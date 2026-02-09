@@ -407,11 +407,7 @@ class Player(pygame.sprite.Sprite):
 					count = self.equipment_inventory.get(self.selected_equipment, 0)
 					self.learning_system.add_notification(f"🔧 {equip_name} ({count})")
 			
-			# T key = place equipment
-			if keys[pygame.K_t] and not self.timers['equipment place'].active:
-				self.timers['equipment place'].activate()
-				self.direction = pygame.math.Vector2()
-				self.frame_index = 0
+			# Equipment controls removed - T key now toggles Skill Tree (in level.py)
 
 			if keys[pygame.K_RETURN]:
 				collided_interaction_sprite = pygame.sprite.spritecollide(self,self.interaction,False)

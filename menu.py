@@ -24,9 +24,9 @@ class Menu:
         self.menu_y = (SCREEN_HEIGHT - self.height) // 2
         
         # Tabs
-        self.tabs = ['SELL', 'SEEDS', 'FERT', 'EQUIP', 'QUIZ']
+        self.tabs = ['SELL', 'SEEDS', 'FERT', 'SUPPLIES']
         self.current_tab = 0
-        self.tab_width = self.width // 5
+        self.tab_width = self.width // 4
         
         # Build item lists per tab
         self._build_item_lists()
@@ -70,8 +70,7 @@ class Menu:
             0: [('sell', item) for item in self.player.item_inventory.keys()],  # SELL
             1: [('buy_seed', seed) for seed in self.player.seed_inventory.keys()],  # SEEDS
             2: [('buy_fert', fert) for fert in self.player.fertilizer_inventory.keys()],  # FERTILIZERS
-            3: [('buy_water', 'water')] + [('buy_equip', equip) for equip in EQUIPMENT_DATA.keys()],  # SUPPLIES
-            4: [('take_quiz', q_id) for q_id in QUIZZES.keys()] # QUIZ
+            3: [('buy_water', 'water'), ('buy_drip', 'drip_irrigation')]  # SUPPLIES
         }
 
     def display_money(self):
@@ -420,11 +419,11 @@ class Menu:
             else:
                 # Normal Menu Input
                 if keys[pygame.K_RIGHT]:
-                    self.current_tab = (self.current_tab + 1) % 5
+                    self.current_tab = (self.current_tab + 1) % 4
                     self.index = 0
                     self.timer.activate()
                 if keys[pygame.K_LEFT]:
-                    self.current_tab = (self.current_tab - 1) % 5
+                    self.current_tab = (self.current_tab - 1) % 4
                     self.index = 0
                     self.timer.activate()
                     
@@ -478,6 +477,15 @@ class Menu:
                                     self.player.water_reserve + 10
                                 )
                                 self.player.money -= price
+                            else:
+                                self.show_notification("Not enough money!")
+                         
+                         elif action == 'buy_drip':
+                            price = 50
+                            if self.player.money >= price:
+                                self.player.drip_irrigation_count += 1
+                                self.player.money -= price
+                                self.show_notification("Drip Irrigation Setup purchased!")
                             else:
                                 self.show_notification("Not enough money!")
 
