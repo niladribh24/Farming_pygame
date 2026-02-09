@@ -70,7 +70,7 @@ class Menu:
             0: [('sell', item) for item in self.player.item_inventory.keys()],  # SELL
             1: [('buy_seed', seed) for seed in self.player.seed_inventory.keys()],  # SEEDS
             2: [('buy_fert', fert) for fert in self.player.fertilizer_inventory.keys()],  # FERTILIZERS
-            3: [('buy_equip', equip) for equip in EQUIPMENT_DATA.keys()],  # EQUIPMENT
+            3: [('buy_water', 'water')] + [('buy_equip', equip) for equip in EQUIPMENT_DATA.keys()],  # SUPPLIES
             4: [('take_quiz', q_id) for q_id in QUIZZES.keys()] # QUIZ
         }
 
@@ -331,6 +331,12 @@ class Menu:
              amount = 0
              price = 0
         
+        # Check for drip irrigation
+        if action == 'buy_drip':
+            name = "Drip Irrigation Setup"
+            amount = self.player.drip_irrigation_count
+            price = 50
+        
         return name, amount, price
 
     def update(self):
@@ -452,18 +458,28 @@ class Menu:
                             if self.player.money >= price:
                                 self.player.seed_inventory[item] += 1
                                 self.player.money -= price
+                            else:
+                                self.show_notification("Not enough money!")
                                 
                          elif action == 'buy_fert':
                             price = self._get_item_details(action, item)[2]
                             if self.player.money >= price:
                                 self.player.fertilizer_inventory[item] += 1
                                 self.player.money -= price
+                            else:
+                                self.show_notification("Not enough money!")
                                 
                          elif action == 'buy_water':
-                            price = self._get_item_details(action, item)[2]
+                            price = 5
                             if self.player.money >= price:
-                                self.player.water_reserve += 10
+                                # Add water but don't exceed max
+                                self.player.water_reserve = min(
+                                    self.player.max_water_reserve,
+                                    self.player.water_reserve + 10
+                                )
                                 self.player.money -= price
+                            else:
+                                self.show_notification("Not enough money!")
 
                          elif action == 'buy_equip':
                             price = self._get_item_details(action, item)[2]

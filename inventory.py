@@ -5,22 +5,6 @@ import pygame
 from settings import *
 from knowledge_base import FERTILIZER_DATA
 
-def get_item_category(item_name):
-    """Get the category of an item by name"""
-    # Seeds
-    if item_name in ['corn', 'tomato', 'wheat', 'carrot', 'potato']:
-        return 'seed'
-    # Crops (harvested items)
-    if item_name in ['corn', 'tomato', 'wheat', 'carrot', 'potato']:
-        return 'crop'
-    # Materials
-    if item_name in ['wood', 'apple']:
-        return 'material'
-    # Fertilizers
-    if item_name in FERTILIZER_DATA:
-        return 'fertilizer'
-    return 'other'
-
 class Inventory:
     def __init__(self, player):
         # General setup
@@ -422,6 +406,23 @@ class Inventory:
         text = self.item_font.render(help_text, True, (180, 180, 180))
         text_rect = text.get_rect(midbottom=(SCREEN_WIDTH // 2, help_y))
         self.display_surface.blit(text, text_rect)
+    
+    def draw_item_info(self):
+        """Draw info about selected item"""
+        items = self.get_category_items()
+        if self.selected_slot < len(items):
+            item = items[self.selected_slot]
+            name = item['name'].replace('_', ' ').title()
+            
+            # Get display name for fertilizers
+            if item['type'] == 'fertilizer' and item['name'] in FERTILIZER_DATA:
+                name = FERTILIZER_DATA[item['name']]['name']
+            
+            info_y = self.rect.bottom - 40
+            info_text = f"Selected: {name}"
+            text = self.item_font.render(info_text, True, (200, 200, 100))
+            text_rect = text.get_rect(midbottom=(SCREEN_WIDTH // 2, info_y))
+            self.display_surface.blit(text, text_rect)
     
     def draw_search_bar(self):
         """Draw the search input bar"""

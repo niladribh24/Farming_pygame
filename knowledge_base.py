@@ -327,7 +327,7 @@ ACHIEVEMENT_DEFINITIONS = {
 # ==============================================================================
 # INITIAL GAME VALUES
 # ==============================================================================
-INITIAL_SOIL_HEALTH = 50
+INITIAL_SOIL_HEALTH = 0
 MIN_SOIL_HEALTH = 0
 MAX_SOIL_HEALTH = 100
 INITIAL_WATER_RESERVE = 10

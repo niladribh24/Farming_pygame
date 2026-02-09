@@ -17,6 +17,7 @@ from settings_menu import get_settings_menu
 from equipment import PlacedWaterTank
 from save_manager import SaveManager
 from inventory import get_inventory
+from skill_tree import get_skill_tree
 
 class Level:
 	def __init__(self):
@@ -78,6 +79,14 @@ class Level:
 		self.inventory = get_inventory(self.player)
 		self.inventory_toggle_timer = pygame.time.get_ticks()
 		self.book_toggle_timer = pygame.time.get_ticks()
+		
+		# Skill tree
+		self.skill_tree = get_skill_tree(self.player)
+		
+		# Drip irrigation removal confirmation
+		self.drip_removal_pending = False
+		self.drip_removal_target = None
+		self.skill_tree_toggle_timer = pygame.time.get_ticks()
 
 		# music
 		self.success = pygame.mixer.Sound('./audio/success.wav')
@@ -233,12 +242,16 @@ class Level:
 			self.soil_layer.water_all()
 			# Collect rainwater into player's reserve
 			self.player.collect_rainwater(5)
-			
 			# Bonus collection from placed water tanks
 			tank_bonus = len(self.water_tank_sprites.sprites()) * 15
 			if tank_bonus > 0:
 				self.player.rain_tank.collect_rain(tank_bonus)
 				self.learning_system.add_notification(f"💧 Tanks collected +{tank_bonus} water!")
+		else:
+			# Drip irrigation auto-waters when not raining (prevents overwatering)
+			drip_watered = self.soil_layer.auto_water_drip_tiles()
+			if drip_watered > 0:
+				self.learning_system.add_notification(f"Drip irrigation watered {drip_watered} tiles automatically!")
 		
 		# Auto-save after day transition (update trees first)
 		# Regrow trees logic
@@ -266,15 +279,43 @@ class Level:
 		if self.soil_layer.plant_sprites:
 			for plant in self.soil_layer.plant_sprites.sprites():
 				if plant.harvestable and plant.rect.colliderect(self.player.hitbox):
-					# Calculate yield based on soil health
-					yield_modifier = self.soil_layer.calculate_yield_modifier(plant.rect.center)
+					# Get tile health for multiplier
+					tile_health = self.soil_layer.get_tile_soil_health(plant.rect.center)
 					
-					# Add to inventory (base + modifier bonus)
-					self.player_add(plant.plant_type)
-					if yield_modifier >= 1.5:
-						# Bonus harvest for healthy soil!
+					# Tile health multiplier: <50% = x1, >=50% = x2, 100% = x4
+					if tile_health >= 100:
+						health_multiplier = 4
+					elif tile_health >= 50:
+						health_multiplier = 2
+					else:
+						health_multiplier = 1
+					
+					# Fertilizer bonus: x2 if fertilized majority of growth days
+					fertilizer_multiplier = 1
+					if plant.total_grow_days > 0:
+						fertilized_ratio = plant.fertilized_days / plant.total_grow_days
+						if fertilized_ratio >= 0.5:  # 50% or more days fertilized
+							fertilizer_multiplier = 2
+					
+					# Total yield = base * health_multiplier * fertilizer_multiplier
+					total_yield = health_multiplier * fertilizer_multiplier
+					
+					# Add to inventory based on total yield
+					for _ in range(total_yield):
 						self.player_add(plant.plant_type)
-						self.learning_system.add_notification("🌾 Bonus harvest from healthy soil!")
+					
+					# Show notification based on multiplier and add score bonus
+					if total_yield >= 8:
+						self.learning_system.add_notification(f"x{total_yield} MEGA harvest! (100% health + fertilized) +20pts")
+						self.learning_system.add_score(20, "mega_harvest")
+					elif total_yield >= 4:
+						self.learning_system.add_notification(f"x{total_yield} harvest! (great soil + fertilizer) +8pts")
+						self.learning_system.add_score(8, "great_harvest")
+					elif total_yield >= 2:
+						self.learning_system.add_notification(f"x{total_yield} harvest from healthy soil! +3pts")
+						self.learning_system.add_score(3, "good_harvest")
+					else:
+						self.learning_system.add_score(1, "harvest")
 					
 					plant.kill()
 					Particle(plant.rect.topleft, plant.image, self.all_sprites, z = LAYERS['main'])
@@ -305,14 +346,48 @@ class Level:
 				self.inventory_toggle_timer = current_time
 		
 		# P key to toggle Settings Menu
-		if keys[pygame.K_p] and not self.player.sleep and not self.shop_active and not self.knowledge_book.is_open and not self.inventory.is_open:
+		if keys[pygame.K_p] and not self.player.sleep and not self.shop_active and not self.knowledge_book.is_open and not self.inventory.is_open and not self.skill_tree.is_open:
 			if current_time - self.settings_toggle_timer > 400:
 				self.settings_menu.toggle()
 				self.settings_toggle_timer = current_time
 		
+		# T key to toggle Skill Tree
+		if keys[pygame.K_t] and not self.player.sleep and not self.shop_active and not self.knowledge_book.is_open and not self.inventory.is_open and not self.settings_menu.is_open:
+			if current_time - self.skill_tree_toggle_timer > 400:
+				self.skill_tree.toggle()
+				self.skill_tree_toggle_timer = current_time
+		
+		# X key to remove drip irrigation (with confirmation)
+		if keys[pygame.K_x] and not self.player.sleep and not self.shop_active:
+			if current_time - self.skill_tree_toggle_timer > 400:  # Reuse timer
+				self.skill_tree_toggle_timer = current_time
+				if self.drip_removal_pending:
+					# Confirm removal
+					if self.drip_removal_target:
+						self.soil_layer.remove_drip_irrigation(self.drip_removal_target, self.player)
+					self.drip_removal_pending = False
+					self.drip_removal_target = None
+				else:
+					# Check if standing on drip irrigation
+					target_pos = self.player.rect.center
+					for drip in self.soil_layer.drip_irrigation_sprites.sprites():
+						if drip.rect.collidepoint(target_pos):
+							self.drip_removal_pending = True
+							self.drip_removal_target = target_pos
+							self.learning_system.add_notification("Remove drip irrigation? Press X again to confirm, ESC to cancel.")
+							break
+		
+		# ESC cancels drip removal
+		if keys[pygame.K_ESCAPE] and self.drip_removal_pending:
+			self.drip_removal_pending = False
+			self.drip_removal_target = None
+			self.learning_system.add_notification("Removal cancelled.")
+		
 		# Main game state updates
 		if self.settings_menu.is_open:
 			self.settings_menu.update()
+		elif self.skill_tree.is_open:
+			self.skill_tree.update()
 		elif self.inventory.is_open:
 			# Inventory is open - update it and handle text input events
 			for event in events:
@@ -343,6 +418,8 @@ class Level:
 		# Draw menus/book LAST so they appear on top of everything
 		if self.settings_menu.is_open:
 			self.settings_menu.display()
+		elif self.skill_tree.is_open:
+			self.skill_tree.display()
 		elif self.inventory.is_open:
 			self.inventory.display()
 		elif self.knowledge_book.is_open:

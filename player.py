@@ -4,7 +4,6 @@ from support import *
 from timer import Timer
 from knowledge_base import FERTILIZER_DATA, IRRIGATION_DATA, INITIAL_WATER_RESERVE, MAX_WATER_RESERVE
 from rainwater import RainTank
-from inventory import get_item_category
 
 class Player(pygame.sprite.Sprite):
 	def __init__(self, pos, group, collision_sprites, tree_sprites, interaction, soil_layer, toggle_shop):
@@ -40,6 +39,7 @@ class Player(pygame.sprite.Sprite):
 			'irrigation switch': Timer(200),
 			'equipment place': Timer(350, self.place_equipment),
 			'equipment switch': Timer(200),
+			'drip_place': Timer(350),  # Drip irrigation placement cooldown
 		}
 
 		# tools 
@@ -93,8 +93,7 @@ class Player(pygame.sprite.Sprite):
 		# Water reserve (for rainwater collection)
 		self.water_reserve = INITIAL_WATER_RESERVE
 		self.base_max_water_reserve = MAX_WATER_RESERVE
-		self.water_reserve = INITIAL_WATER_RESERVE
-		self.base_max_water_reserve = MAX_WATER_RESERVE
+
 		self.max_water_reserve = self.base_max_water_reserve
 		self.water_tank_bonus = 0 # Updates from placed water tanks
 		
@@ -110,6 +109,9 @@ class Player(pygame.sprite.Sprite):
 		self.equipment_index = 0
 		self.selected_equipment = self.equipment_types[self.equipment_index]
 		
+		# Drip irrigation setups (placeable items)
+		self.drip_irrigation_count = 0
+		
 		self.money = 200
 
 		# interaction
@@ -124,6 +126,23 @@ class Player(pygame.sprite.Sprite):
 		
 		# Fatigue System (Sleep Penalty)
 		self.fatigue = 0 # 0 = rested, >0 = tired
+		
+		# SKILL SYSTEM
+		# Water skills: affects max_water_reserve
+		self.water_skill_level = 0  # 0 = not unlocked, 1-3 = unlocked levels
+		self.water_skill_capacities = {0: 50, 1: 100, 2: 150, 3: 200}
+		
+		# Speed skills: affects movement speed
+		self.speed_skill_level = 0  # 0 = not unlocked, 1-3 = unlocked levels
+		self.base_speed = 200  # Base speed at level 0
+		self.speed_multipliers = {0: 1.0, 1: 1.1, 2: 1.2, 3: 1.3}  # 100%, 110%, 120%, 130%
+		
+		# Drip irrigation: unlockable item
+		self.drip_irrigation_unlocked = False
+		
+		# Apply initial skill effects
+		if hasattr(self, 'apply_skill_effects'):
+			self.apply_skill_effects()
 
 		# sound
 		self.watering = pygame.mixer.Sound('./audio/water.mp3')
@@ -211,7 +230,7 @@ class Player(pygame.sprite.Sprite):
 		
 		if equip_type == 'drip_emitter':
 			# Place on soil tile
-			if self.soil_layer.place_drip_emitter(self.target_pos):
+			if self.soil_layer.place_drip_irrigation(self.target_pos, self):
 				self.equipment_inventory[equip_type] -= 1
 				if self.learning_system:
 					self.learning_system.add_notification("🌊 Drip emitter placed!")
@@ -354,9 +373,18 @@ class Player(pygame.sprite.Sprite):
 				self.direction = pygame.math.Vector2()
 				self.frame_index = 0
 			
+			# G key = place drip irrigation setup
+			if keys[pygame.K_g] and not self.timers['drip_place'].active:
+				self.timers['drip_place'].activate()  # Prevent spam
+				if self.equipment_inventory.get('drip_emitter', 0) > 0:
+					target_pos = self.rect.center + PLAYER_TOOL_OFFSET[self.status.split('_')[0]]
+					self.soil_layer.place_drip_irrigation(target_pos, self)
+				elif self.learning_system:
+					self.learning_system.add_notification("No drip irrigation setups! Buy from shop.")
+			
 			# IRRIGATION CONTROLS
-			# I key = switch irrigation mode (only unlocked modes)
-			if keys[pygame.K_i] and not self.timers['irrigation switch'].active:
+			# O key = switch irrigation mode (only unlocked modes)
+			if keys[pygame.K_o] and not self.timers['irrigation switch'].active:
 				self.timers['irrigation switch'].activate()
 				unlocked_modes = self.get_unlocked_irrigation_modes()
 				if len(unlocked_modes) > 1:
@@ -393,6 +421,17 @@ class Player(pygame.sprite.Sprite):
 					else:
 						self.status = 'left_idle'
 						self.sleep = True
+	
+	def _apply_skill_effects(self):
+		"""Apply skill effects to player stats"""
+		# Water skill affects max water reserve
+		self.max_water_reserve = self.water_skill_capacities[self.water_skill_level]
+		# Clamp current reserve to new max
+		if self.water_reserve > self.max_water_reserve:
+			self.water_reserve = self.max_water_reserve
+		
+		# Speed skill affects movement speed
+		self.speed = int(self.base_speed * self.speed_multipliers[self.speed_skill_level])
 
 	def get_status(self):
 		

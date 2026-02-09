@@ -19,13 +19,38 @@ class WaterTile(pygame.sprite.Sprite):
 		self.rect = self.image.get_rect(topleft = pos)
 		self.z = LAYERS['soil water']
 
-class DripEmitter(pygame.sprite.Sprite):
-	"""Drip irrigation emitter placed on soil tiles"""
-	def __init__(self, pos, surf, groups):
+class DripIrrigationSetup(pygame.sprite.Sprite):
+	"""A 2x2 tile (128x128 pixel) drip irrigation system that auto-waters covered tiles"""
+	def __init__(self, pos, groups):
 		super().__init__(groups)
-		self.image = surf
-		self.rect = self.image.get_rect(topleft = pos)
-		self.z = LAYERS['ground plant']  # Same layer as plants so it overlays nicely
+		# Load and scale image to 2x2 tiles (TILE_SIZE * 2 = 128 pixels)
+		size = TILE_SIZE * 2  # 128 pixels for 2x2 tiles
+		try:
+			original = pygame.image.load('./graphics/objects/drip_irrigation.png').convert_alpha()
+			self.image = pygame.transform.scale(original, (size, size))
+		except:
+			# Fallback if image not found
+			self.image = pygame.Surface((size, size), pygame.SRCALPHA)
+			pygame.draw.rect(self.image, (139, 90, 43), (0, 30, size, 8))
+			pygame.draw.rect(self.image, (139, 90, 43), (0, 90, size, 8))
+			pygame.draw.rect(self.image, (139, 90, 43), (30, 0, 8, size))
+			pygame.draw.rect(self.image, (139, 90, 43), (90, 0, 8, size))
+		
+		self.rect = self.image.get_rect(topleft=pos)
+		self.z = LAYERS['main']  # Above soil
+		
+		# Store grid position (top-left tile)
+		self.grid_x = pos[0] // TILE_SIZE
+		self.grid_y = pos[1] // TILE_SIZE
+	
+	def get_covered_tiles(self):
+		"""Return list of (x, y) tile coordinates this setup covers"""
+		return [
+			(self.grid_x, self.grid_y),
+			(self.grid_x + 1, self.grid_y),
+			(self.grid_x, self.grid_y + 1),
+			(self.grid_x + 1, self.grid_y + 1)
+		]
 
 class Plant(pygame.sprite.Sprite):
 	def __init__(self, plant_type, groups, soil, check_watered):
@@ -43,6 +68,10 @@ class Plant(pygame.sprite.Sprite):
 		self.grow_speed = GROW_SPEED[plant_type]
 		self.harvestable = False
 		self.unwatered_days = 0
+		
+		# Fertilizer tracking for double yield
+		self.fertilized_days = 0  # Days fertilized during growth
+		self.total_grow_days = 0  # Total days of growth
 
 		# sprite setup
 		self.image = self.frames[self.age]
@@ -53,6 +82,7 @@ class Plant(pygame.sprite.Sprite):
 	def grow(self):
 		if self.check_watered(self.rect.center):
 			self.age += self.grow_speed
+			self.total_grow_days += 1  # Track total days of growth
 
 			if int(self.age) > 0:
 				self.z = LAYERS['main']
@@ -74,7 +104,7 @@ class SoilLayer:
 		self.soil_sprites = pygame.sprite.Group()
 		self.water_sprites = pygame.sprite.Group()
 		self.plant_sprites = pygame.sprite.Group()
-		self.drip_sprites = pygame.sprite.Group()  # FEATURE: Drip Emitters
+		self.drip_irrigation_sprites = pygame.sprite.Group()  # Drip irrigation setups
 
 		# graphics
 		self.soil_surfs = import_folder_dict('./graphics/soil/')
@@ -144,8 +174,8 @@ class SoilLayer:
 		# 2D Array - Last Crop Grid (for monocropping detection)
 		self.last_crop_grid = [[None for col in range(h_tiles)] for row in range(v_tiles)]
 		
-		# 2D Array - Drip Emitter Grid (tracks placed emitters)
-		self.drip_emitter_grid = [[False for col in range(h_tiles)] for row in range(v_tiles)]
+		# 2D Array - Fertilized Today Grid (tracks if tile was fertilized this day)
+		self.fertilized_today_grid = [[False for col in range(h_tiles)] for row in range(v_tiles)]
 		
 		for x, y, _ in load_pygame('./data/map.tmx').get_layer_by_name('Farmable').tiles():
 			self.grid[y][x].append('F')
@@ -170,6 +200,8 @@ class SoilLayer:
 
 				if 'F' in self.grid[y][x]:
 					self.grid[y][x].append('X')
+					# Set initial tile health to 10% when tilled
+					self.soil_health_grid[y][x] = 10
 					self.create_soil_tiles()
 					if self.raining:
 						self.water_all()
@@ -258,7 +290,7 @@ class SoilLayer:
 					self.grid[y][x].append('P')
 					Plant(seed, [self.all_sprites, self.plant_sprites, self.collision_sprites], soil_sprite, self.check_watered)
 
-	def _force_plant(self, soil_sprite, seed, age, harvestable, unwatered_days=0):
+	def _force_plant(self, soil_sprite, seed, age, harvestable, unwatered_days=0, fertilized_days=0, total_grow_days=0):
 		"""Force create a plant at specific stage (for loading saves)"""
 		x = soil_sprite.rect.x // TILE_SIZE
 		y = soil_sprite.rect.y // TILE_SIZE
@@ -281,6 +313,8 @@ class SoilLayer:
 			plant.hitbox = plant.rect.copy().inflate(-26,-plant.rect.height * 0.4)
 		
 		plant.unwatered_days = unwatered_days
+		plant.fertilized_days = fertilized_days
+		plant.total_grow_days = total_grow_days
 		return plant
 
 	def update_plants(self):
@@ -305,6 +339,9 @@ class SoilLayer:
 					plant.kill()
 
 	def create_soil_tiles(self):
+		# Kill all existing soil sprites (removes from ALL groups they're in)
+		for sprite in self.soil_sprites.sprites():
+			sprite.kill()
 		self.soil_sprites.empty()
 		for index_row, row in enumerate(self.grid):
 			for index_col, cell in enumerate(row):
@@ -384,65 +421,37 @@ class SoilLayer:
 			return self.soil_health_grid[y][x]
 		return INITIAL_SOIL_HEALTH
 	
-	def place_drip_emitter(self, target_pos):
-		"""Place a drip emitter covering 2x2 soil tiles"""
-		for soil_sprite in self.soil_sprites.sprites():
-			if soil_sprite.rect.collidepoint(target_pos):
-				x = soil_sprite.rect.x // TILE_SIZE
-				y = soil_sprite.rect.y // TILE_SIZE
-				
-				# Check bounds for 2x2 area
-				if x + 1 >= self.grid_width or y + 1 >= self.grid_height:
+	def is_tile_tilled(self, pos):
+		"""Check if tile at position is tilled (has 'X' in grid).
+		Also untills tiles that have 0% health."""
+		x = pos[0] // TILE_SIZE
+		y = pos[1] // TILE_SIZE
+		if 0 <= x < self.grid_width and 0 <= y < self.grid_height:
+			if 'X' in self.grid[y][x]:
+				# Check if tile should be untilled due to 0% health
+				if self.soil_health_grid[y][x] <= 0:
+					self._untill_tile(x, y)
+					self.create_soil_tiles()  # Update visuals immediately
 					return False
-				
-				# Check if all 4 tiles are farmable soil ('F')
-				if ('F' not in self.grid[y][x] or 
-					'F' not in self.grid[y][x+1] or 
-					'F' not in self.grid[y+1][x] or 
-					'F' not in self.grid[y+1][x+1]):
-					return False
-				
-				# Check if area is clear of existing emitters
-				if (self.drip_emitter_grid[y][x] or 
-					self.drip_emitter_grid[y][x+1] or 
-					self.drip_emitter_grid[y+1][x] or 
-					self.drip_emitter_grid[y+1][x+1]):
-					return False
-				
-				# Place emitter
-				self.drip_emitter_grid[y][x] = True
-				self.drip_emitter_grid[y][x+1] = True
-				self.drip_emitter_grid[y+1][x] = True
-				self.drip_emitter_grid[y+1][x+1] = True
-				
-				DripEmitter(
-					pos=(soil_sprite.rect.x, soil_sprite.rect.y),
-					surf=self.drip_surf,
-					groups=[self.all_sprites, self.drip_sprites]
-				)
 				return True
 		return False
 	
-	def has_drip_emitter(self, pos):
-		"""Check if tile has a drip emitter"""
-		x = int(pos[0] // TILE_SIZE)
-		y = int(pos[1] // TILE_SIZE)
-		if 0 <= x < self.grid_width and 0 <= y < self.grid_height:
-			return self.drip_emitter_grid[y][x]
-		return False
-	
+
 	def calculate_yield_modifier(self, pos):
 		"""Calculate yield modifier based on soil health at position"""
 		health = self.get_tile_soil_health(pos)
 		return health / 50.0  # 50 = 100% yield, 100 = 200%, 0 = 0%
 	
 	def reset_daily_water_counts(self):
-		"""Reset water counts at end of day and evaluate watering"""
+		"""Reset water counts at end of day and evaluate watering.
+		Also applies -5% tile health decay for unfertilized tiles."""
+		tiles_to_untill = []
+		
 		for row_idx in range(self.grid_height):
 			for col_idx in range(self.grid_width):
 				water_count = self.water_count_grid[row_idx][col_idx]
 				
-				# Only evaluate tiles that were worked on
+				# Only evaluate tiles that were worked on (tilled)
 				if 'X' in self.grid[row_idx][col_idx]:
 					if water_count == 1 or water_count == 2:
 						# Correct watering
@@ -452,52 +461,215 @@ class SoilLayer:
 						# Under-watering (planted but not watered), UNLESS it's raining
 						if self.learning_system and not self.raining:
 							self.apply_soil_impact(col_idx, row_idx, 'under_water')
+					
+					# Daily tile health decay if NOT fertilized today
+					if not self.fertilized_today_grid[row_idx][col_idx]:
+						self.soil_health_grid[row_idx][col_idx] -= 5  # -5% daily decay
+						
+						# Check if tile should become untilled
+						if self.soil_health_grid[row_idx][col_idx] <= 0:
+							tiles_to_untill.append((col_idx, row_idx))
 				
 				# Reset water count
 				self.water_count_grid[row_idx][col_idx] = 0
+				
+				# Reset fertilized today flag
+				self.fertilized_today_grid[row_idx][col_idx] = False
+		
+		# Untill ALL depleted tiles (check every tilled tile, not just decayed)
+		for row_idx in range(self.grid_height):
+			for col_idx in range(self.grid_width):
+				if 'X' in self.grid[row_idx][col_idx] and self.soil_health_grid[row_idx][col_idx] <= 0:
+					tiles_to_untill.append((col_idx, row_idx))
+		
+		# Remove duplicates and untill
+		tiles_untilled = set(tiles_to_untill)
+		for x, y in tiles_untilled:
+			self._untill_tile(x, y)
+			if self.learning_system:
+				self.learning_system.add_notification("⚠️ A tile was depleted and returned to grass.")
+		
+		# Recreate soil tiles ONCE after all untilling is done
+		if tiles_untilled:
+			self.create_soil_tiles()
 	
 	def apply_fertilizer(self, target_pos, fertilizer_type):
 		"""
 		Apply fertilizer to a soil tile.
+		Right fertilizer: +10% tile health, score bonus
+		Wrong fertilizer: -10% tile health
+		Tracks fertilized_today for double yield calculation.
 		Returns True if successful, False otherwise.
 		"""
-		from knowledge_base import FERTILIZER_DATA
+		from knowledge_base import FERTILIZER_DATA, CROP_DATA
 		
 		for soil_sprite in self.soil_sprites.sprites():
 			if soil_sprite.rect.collidepoint(target_pos):
 				x = soil_sprite.rect.x // TILE_SIZE
 				y = soil_sprite.rect.y // TILE_SIZE
 				
-				# Get fertilizer effects
+				# Get fertilizer data
 				fert_data = FERTILIZER_DATA.get(fertilizer_type, {})
-				soil_effect = fert_data.get('soil_effect', 0)
 				score_effect = fert_data.get('score_effect', 0)
 				
-				# Apply soil health change
+				# Check if right or wrong fertilizer for current crop
+				current_crop = self.last_crop_grid[y][x]
+				is_right_fertilizer = False
+				
+				if current_crop:
+					# Get crop's best fertilizer list
+					crop_data = CROP_DATA.get(current_crop, {})
+					best_fertilizers = crop_data.get('best_fertilizer', [])
+					is_right_fertilizer = fertilizer_type in best_fertilizers
+				
+				# Apply tile health change: +10% for right, -10% for wrong
+				if is_right_fertilizer:
+					health_change = 10
+					msg = f"✔ Right fertilizer for {current_crop.capitalize()}! +10% tile health"
+					bonus_score = 5
+				elif current_crop:
+					# Wrong fertilizer for the crop
+					health_change = -10
+					msg = f"✖ Wrong fertilizer for {current_crop.capitalize()}! -10% tile health"
+					bonus_score = 0
+				else:
+					# No crop planted - fertilizer still adds health
+					health_change = 10
+					msg = f"Applied fertilizer (+10% tile health)"
+					bonus_score = 0
+				
+				# Update tile health
 				self.soil_health_grid[y][x] = max(MIN_SOIL_HEALTH,
-					min(MAX_SOIL_HEALTH, self.soil_health_grid[y][x] + soil_effect))
+					min(MAX_SOIL_HEALTH, self.soil_health_grid[y][x] + health_change))
+				
+				# Mark tile as fertilized today (for double yield and daily decay)
+				self.fertilized_today_grid[y][x] = True
+				
+				# Check if tile should become untilled (0% health)
+				if self.soil_health_grid[y][x] <= 0:
+					self._untill_tile(x, y)
+					if self.learning_system:
+						self.learning_system.add_notification("⚠️ Tile depleted! Returned to grass.")
+					return True
+				
+				# Update plant's fertilized_days counter
+				if 'P' in self.grid[y][x]:
+					for plant in self.plant_sprites.sprites():
+						if plant.soil == soil_sprite:
+							plant.fertilized_days += 1
+							break
 				
 				# Log to learning system
 				if self.learning_system:
-					bonus_score = 0
-					bonus_msg = ""
-					
-					# Check for Plant and Bonus
-					if 'P' in self.grid[y][x]:
-						current_crop = self.last_crop_grid[y][x]
-						best_for = fert_data.get('best_for', [])
-						if current_crop in best_for:
-							bonus_score = 5
-							bonus_msg = f" Perfect for {current_crop.capitalize()}! (+{bonus_score})"
-					
-					if fertilizer_type == 'organic':
-						self.learning_system.log_action('organic_fert', f'+{soil_effect} soil')
-						self.learning_system.add_notification(f"🌿 Organic fertilizer applied{bonus_msg}")
-					else:
-						self.learning_system.log_action('chemical_fert', f'{soil_effect} soil')
-						self.learning_system.add_notification(f"⚗️ Chemical fertilizer applied{bonus_msg}")
-					
+					self.learning_system.add_notification(msg)
 					self.learning_system.total_score += score_effect + bonus_score
 				
 				return True
 		return False
+	
+	def _untill_tile(self, x, y):
+		"""Convert a tilled tile back to untilled grass"""
+		# Remove 'X' (tilled) marker
+		if 'X' in self.grid[y][x]:
+			self.grid[y][x].remove('X')
+		
+		# Remove 'W' (watered) marker
+		if 'W' in self.grid[y][x]:
+			self.grid[y][x].remove('W')
+		
+		# Remove 'P' (planted) marker and kill any plant
+		if 'P' in self.grid[y][x]:
+			self.grid[y][x].remove('P')
+			# Kill plant on this tile
+			for plant in self.plant_sprites.sprites():
+				if plant.soil.rect.x // TILE_SIZE == x and plant.soil.rect.y // TILE_SIZE == y:
+					plant.kill()
+					break
+		
+		# Reset tile health to 0
+		self.soil_health_grid[y][x] = 0
+	
+	def place_drip_irrigation(self, target_pos, player):
+		"""Place a drip irrigation setup at the target position (2x2 tiles).
+		Returns True if placed successfully, False otherwise."""
+		# Get tile coordinates
+		x = int(target_pos[0] // TILE_SIZE)
+		y = int(target_pos[1] // TILE_SIZE)
+		
+		# Check if player has drip setups available (Use equipment inventory)
+		if player.equipment_inventory.get('drip_emitter', 0) <= 0:
+			return False
+		
+		# Check if all 4 tiles are within bounds
+		if x + 1 >= self.grid_width or y + 1 >= self.grid_height:
+			if self.learning_system:
+				self.learning_system.add_notification("Can't place here - out of bounds!")
+			return False
+		
+		# Check if all 4 tiles are farmable (tillable land)
+		tiles_to_check = [(x, y), (x+1, y), (x, y+1), (x+1, y+1)]
+		for tx, ty in tiles_to_check:
+			if 'F' not in self.grid[ty][tx]:
+				if self.learning_system:
+					self.learning_system.add_notification("Can only place on tillable farmland!")
+				return False
+		
+		# Check if any of the 4 tiles already have drip irrigation
+		for drip in self.drip_irrigation_sprites.sprites():
+			for (dx, dy) in drip.get_covered_tiles():
+				if (dx == x or dx == x + 1) and (dy == y or dy == y + 1):
+					if self.learning_system:
+						self.learning_system.add_notification("Drip irrigation already placed here!")
+					return False  # Overlapping
+		
+		# Place the drip irrigation setup
+		pixel_x = x * TILE_SIZE
+		pixel_y = y * TILE_SIZE
+		DripIrrigationSetup((pixel_x, pixel_y), [self.all_sprites, self.drip_irrigation_sprites])
+		
+		# Use one from inventory
+		player.drip_irrigation_count -= 1
+		
+		if self.learning_system:
+			self.learning_system.add_notification("Drip irrigation placed! Will auto-water 4 tiles daily.")
+		
+		return True
+	
+	def remove_drip_irrigation(self, target_pos, player):
+		"""Remove a drip irrigation setup at the target position.
+		Returns True if removed, False if none found."""
+		x = int(target_pos[0] // TILE_SIZE)
+		y = int(target_pos[1] // TILE_SIZE)
+		
+		for drip in self.drip_irrigation_sprites.sprites():
+			if (drip.grid_x, drip.grid_y) == (x, y) or \
+			   (drip.grid_x + 1, drip.grid_y) == (x, y) or \
+			   (drip.grid_x, drip.grid_y + 1) == (x, y) or \
+			   (drip.grid_x + 1, drip.grid_y + 1) == (x, y):
+				drip.kill()
+				player.drip_irrigation_count += 1  # Return to inventory
+				if self.learning_system:
+					self.learning_system.add_notification("Drip irrigation removed and returned to inventory.")
+				return True
+		return False
+	
+	def auto_water_drip_tiles(self):
+		"""Water all tiles covered by drip irrigation systems (called on new day, unless raining)"""
+		watered_count = 0
+		for drip in self.drip_irrigation_sprites.sprites():
+			for (x, y) in drip.get_covered_tiles():
+				if 0 <= x < self.grid_width and 0 <= y < self.grid_height:
+					# Only water tilled tiles with plants or just tilled
+					if 'X' in self.grid[y][x]:
+						pixel_x = x * TILE_SIZE
+						pixel_y = y * TILE_SIZE
+						# Add water if not already watered
+						if 'W' not in self.grid[y][x]:
+							self.grid[y][x].append('W')
+							WaterTile(
+								(pixel_x, pixel_y),
+								choice(self.water_surfs),
+								[self.all_sprites, self.water_sprites]
+							)
+							watered_count += 1
+		return watered_count

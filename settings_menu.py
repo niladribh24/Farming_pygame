@@ -24,7 +24,7 @@ class SettingsMenu:
         self.open_time = 0
         
         # Settings
-        self.music_volume = 0.3
+        self.music_volume = 0
         self.sfx_volume = 0.2
         
         # UI - make it wider for controls
@@ -43,19 +43,22 @@ class SettingsMenu:
         
         # Controls list
         self.controls = [
-            ('Arrow Keys', 'Move player'),
+            ('W/A/S/D', 'Move player'),
             ('Space', 'Use current tool'),
             ('Q', 'Switch tool'),
             ('E', 'Switch seed'),
             ('Left Ctrl', 'Plant seed'),
             ('F', 'Switch fertilizer'),
             ('R', 'Apply fertilizer'),
-            ('I', 'Switch irrigation mode'),
+            ('O', 'Switch irrigation mode'),
+            ('I', 'Open Inventory'),
+            ('T', 'Open Skill Book'),
             ('B', 'Open Knowledge Book'),
             ('P', 'Open Settings'),
             ('Enter', 'Interact (shop/bed)'),
-            ('Escape', 'Close menus'),
         ]
+        self.controls_scroll = 0  # Scroll offset for controls
+        self.max_visible_controls = 10  # Max controls visible at once
         
         # Timer
         self.timer = Timer(150)
@@ -102,6 +105,16 @@ class SettingsMenu:
                     self.timer.activate()
                 if keys[pygame.K_d]:
                     self._adjust_setting(0.1)
+                    self.timer.activate()
+            
+            # Controls tab scrolling
+            if self.current_tab == 1:
+                if keys[pygame.K_UP]:
+                    self.controls_scroll = max(0, self.controls_scroll - 1)
+                    self.timer.activate()
+                if keys[pygame.K_DOWN]:
+                    max_scroll = max(0, len(self.controls) - self.max_visible_controls)
+                    self.controls_scroll = min(max_scroll, self.controls_scroll + 1)
                     self.timer.activate()
             
             # Game tab navigation
@@ -155,11 +168,13 @@ class SettingsMenu:
         
         # Help
         if self.current_tab == 0:
-            help_text = "← → Tabs  |  ↑↓ Select  |  A/D Adjust  |  ESC Close"
+            help_text = "A/D: Adjust Volume  |  ESC: Close"
+        elif self.current_tab == 1:
+            help_text = "Up/Down: Scroll  |  ESC: Close"
         elif self.current_tab == 2:
-             help_text = "← → Tabs  |  SPACE/ENTER Select  |  ESC Close"
+             help_text = "SPACE/ENTER: Select  |  ESC: Close"
         else:
-            help_text = "← → Tabs  |  ESC Close"
+            help_text = "ESC: Close"
         help_surf = self.small_font.render(help_text, False, (150, 150, 150))
         help_rect = help_surf.get_rect(midbottom=(SCREEN_WIDTH // 2, self.menu_y + self.height - 15))
         self.display_surface.blit(help_surf, help_rect)
@@ -239,8 +254,14 @@ class SettingsMenu:
             (col1_x, y), (self.menu_x + self.width - 30, y), 2)
         y += 10
         
-        # Controls list
-        for key, action in self.controls:
+        # Show scroll indicator if needed
+        if self.controls_scroll > 0:
+            arrow_up = self.small_font.render("^ More above", False, (150, 150, 150))
+            self.display_surface.blit(arrow_up, (self.menu_x + self.width - 120, self.menu_y + 105))
+        
+        # Controls list (scrollable)
+        visible_controls = self.controls[self.controls_scroll:self.controls_scroll + self.max_visible_controls]
+        for key, action in visible_controls:
             # Key box
             key_surf = self.small_font.render(key, False, (255, 255, 255))
             key_rect = pygame.Rect(col1_x - 5, y - 2, 130, 22)
@@ -252,6 +273,11 @@ class SettingsMenu:
             self.display_surface.blit(action_surf, (col2_x, y))
             
             y += 26
+        
+        # Show scroll indicator if more below
+        if self.controls_scroll + self.max_visible_controls < len(self.controls):
+            arrow_down = self.small_font.render("v More below", False, (150, 150, 150))
+            self.display_surface.blit(arrow_down, (self.menu_x + self.width - 120, y - 10))
 
     def _draw_game_tab(self):
         y = self.menu_y + 150

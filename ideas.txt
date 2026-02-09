@@ -1,12 +1,17 @@
 ideas :
 - Badges at shopkeeper for finishing quizzes 
-- inventory
 - Rain Water Harvesting
-- soil health bar
-- Skills increase ability (more water capacity, faster movement speed, cheaper prices)
 - Punishment for not sleeping all night
+- Tutorial
 
 DONE :
+- New yielding system based of Fertilizing & Tile Health
+- Tile turns to grass at 0% health
+- Drip irrigation through skills
+- Quizes for Skills
+- Skill Tree & Gameplay Affecting Skills
+- Tile Health affected by Fertilizers
+- inventory
 - Watering needs water in water gauge
 - Water can be bought in shop under SUPPLIES
 - WASD controls

@@ -20,7 +20,12 @@ class SaveManager:
             'water_reserve': player.water_reserve,
             'max_water_reserve': getattr(player, 'max_water_reserve', 100),
             'selected_tool_index': player.tool_index,
-            'selected_seed_index': player.seed_index
+            'selected_seed_index': player.seed_index,
+            # Skill levels
+            'water_skill_level': player.water_skill_level,
+            'speed_skill_level': player.speed_skill_level,
+            'drip_irrigation_unlocked': player.drip_irrigation_unlocked,
+            'drip_irrigation_count': player.drip_irrigation_count
         }
 
         # 2. Soil/Grid Data
@@ -60,7 +65,17 @@ class SaveManager:
                 'type': plant.plant_type,
                 'age': plant.age,
                 'harvestable': plant.harvestable,
-                'unwatered_days': plant.unwatered_days
+                'unwatered_days': plant.unwatered_days,
+                'fertilized_days': plant.fertilized_days,
+                'total_grow_days': plant.total_grow_days
+            })
+
+        # Save drip irrigation setups
+        drip_data = []
+        for drip in soil_layer.drip_irrigation_sprites.sprites():
+            drip_data.append({
+                'x': drip.grid_x,
+                'y': drip.grid_y
             })
 
         soil_data = {
@@ -68,7 +83,8 @@ class SaveManager:
             'grid': soil_layer.grid,
             'water_count': soil_layer.water_count_grid,
             'last_crop': soil_layer.last_crop_grid,
-            'plants': plants_data
+            'plants': plants_data,
+            'drip_setups': drip_data
         }
 
         # 3. Learning System Data
@@ -138,6 +154,16 @@ class SaveManager:
             player.equipment_inventory = p_data.get('equipment_inventory', {})
             player.water_reserve = p_data.get('water_reserve', 0)
             player.max_water_reserve = p_data.get('max_water_reserve', 100)
+            
+            # Load skill levels (Incoming)
+            player.water_skill_level = p_data.get('water_skill_level', 0)
+            player.speed_skill_level = p_data.get('speed_skill_level', 0)
+            player.drip_irrigation_unlocked = p_data.get('drip_irrigation_unlocked', False)
+            player.drip_irrigation_count = p_data.get('drip_irrigation_count', 0)
+            
+            # Apply skill effects after loading (Use HEAD method)
+            if hasattr(player, 'apply_skill_effects'):
+                player.apply_skill_effects()
 
             # 2. Load Learning System
             l_data = data.get('learning', {})
@@ -205,11 +231,21 @@ class SaveManager:
                             break
                     
                     if found_tile:
-                        # Recreate plant
-                        # We need to import Plant here or use soil_layer method if available
-                        # soil_layer.plant_seed does checks, we just want to force plant.
-                        # force plant creation
-                        plant = soil_layer._force_plant(found_tile, p_info['type'],  p_info['age'], p_info['harvestable'], p_info.get('unwatered_days', 0))
+                        # Recreate plant with all data
+                        plant = soil_layer._force_plant(
+                            found_tile, p_info['type'], p_info['age'], 
+                            p_info['harvestable'], p_info.get('unwatered_days', 0),
+                            p_info.get('fertilized_days', 0), p_info.get('total_grow_days', 0)
+                        )
+            
+            # Load drip irrigation setups
+            if 'drip_setups' in s_data:
+                from soil import DripIrrigationSetup
+                for drip_info in s_data['drip_setups']:
+                    x, y = drip_info['x'], drip_info['y']
+                    pixel_x = x * 64
+                    pixel_y = y * 64
+                    DripIrrigationSetup((pixel_x, pixel_y), [soil_layer.all_sprites, soil_layer.drip_irrigation_sprites])
             
             # 4. Load Water Tanks
             tank_list = data.get('water_tanks', [])
