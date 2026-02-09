@@ -267,6 +267,9 @@ class Level:
 			tree.create_fruit()
 
 		self.save_manager.save_game(self.player, self.soil_layer, self.learning_system, self.tree_sprites, water_tanks=self.water_tank_sprites)
+		
+		# Reset sky to morning after sleeping
+		self.sky.reset_cycle()
 
 	def save(self):
 		"""Public method to trigger save (e.g. on quit)"""
