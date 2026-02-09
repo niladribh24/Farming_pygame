@@ -19,6 +19,39 @@ class WaterTile(pygame.sprite.Sprite):
 		self.rect = self.image.get_rect(topleft = pos)
 		self.z = LAYERS['soil water']
 
+class DripIrrigationSetup(pygame.sprite.Sprite):
+	"""A 2x2 tile (128x128 pixel) drip irrigation system that auto-waters covered tiles"""
+	def __init__(self, pos, groups):
+		super().__init__(groups)
+		# Load and scale image to 2x2 tiles (TILE_SIZE * 2 = 128 pixels)
+		size = TILE_SIZE * 2  # 128 pixels for 2x2 tiles
+		try:
+			original = pygame.image.load('./graphics/objects/drip_irrigation.png').convert_alpha()
+			self.image = pygame.transform.scale(original, (size, size))
+		except:
+			# Fallback if image not found
+			self.image = pygame.Surface((size, size), pygame.SRCALPHA)
+			pygame.draw.rect(self.image, (139, 90, 43), (0, 30, size, 8))
+			pygame.draw.rect(self.image, (139, 90, 43), (0, 90, size, 8))
+			pygame.draw.rect(self.image, (139, 90, 43), (30, 0, 8, size))
+			pygame.draw.rect(self.image, (139, 90, 43), (90, 0, 8, size))
+		
+		self.rect = self.image.get_rect(topleft=pos)
+		self.z = LAYERS['main']  # Above soil
+		
+		# Store grid position (top-left tile)
+		self.grid_x = pos[0] // TILE_SIZE
+		self.grid_y = pos[1] // TILE_SIZE
+	
+	def get_covered_tiles(self):
+		"""Return list of (x, y) tile coordinates this setup covers"""
+		return [
+			(self.grid_x, self.grid_y),
+			(self.grid_x + 1, self.grid_y),
+			(self.grid_x, self.grid_y + 1),
+			(self.grid_x + 1, self.grid_y + 1)
+		]
+
 class Plant(pygame.sprite.Sprite):
 	def __init__(self, plant_type, groups, soil, check_watered):
 		super().__init__(groups)
@@ -71,6 +104,7 @@ class SoilLayer:
 		self.soil_sprites = pygame.sprite.Group()
 		self.water_sprites = pygame.sprite.Group()
 		self.plant_sprites = pygame.sprite.Group()
+		self.drip_irrigation_sprites = pygame.sprite.Group()  # Drip irrigation setups
 
 		# graphics
 		self.soil_surfs = import_folder_dict('./graphics/soil/')
@@ -367,6 +401,7 @@ class SoilLayer:
 				# Check if tile should be untilled due to 0% health
 				if self.soil_health_grid[y][x] <= 0:
 					self._untill_tile(x, y)
+					self.create_soil_tiles()  # Update visuals immediately
 					return False
 				return True
 		return False
@@ -417,10 +452,15 @@ class SoilLayer:
 					tiles_to_untill.append((col_idx, row_idx))
 		
 		# Remove duplicates and untill
-		for x, y in set(tiles_to_untill):
+		tiles_untilled = set(tiles_to_untill)
+		for x, y in tiles_untilled:
 			self._untill_tile(x, y)
 			if self.learning_system:
 				self.learning_system.add_notification("⚠️ A tile was depleted and returned to grass.")
+		
+		# Recreate soil tiles ONCE after all untilling is done
+		if tiles_untilled:
+			self.create_soil_tiles()
 	
 	def apply_fertilizer(self, target_pos, fertilizer_type):
 		"""
@@ -517,6 +557,88 @@ class SoilLayer:
 		
 		# Reset tile health to 0
 		self.soil_health_grid[y][x] = 0
+	
+	def place_drip_irrigation(self, target_pos, player):
+		"""Place a drip irrigation setup at the target position (2x2 tiles).
+		Returns True if placed successfully, False otherwise."""
+		# Get tile coordinates
+		x = int(target_pos[0] // TILE_SIZE)
+		y = int(target_pos[1] // TILE_SIZE)
 		
-		# Recreate soil tiles (removes visual)
-		self.create_soil_tiles()
+		# Check if player has drip setups available
+		if player.drip_irrigation_count <= 0:
+			return False
+		
+		# Check if all 4 tiles are within bounds
+		if x + 1 >= self.grid_width or y + 1 >= self.grid_height:
+			if self.learning_system:
+				self.learning_system.add_notification("Can't place here - out of bounds!")
+			return False
+		
+		# Check if all 4 tiles are farmable (tillable land)
+		tiles_to_check = [(x, y), (x+1, y), (x, y+1), (x+1, y+1)]
+		for tx, ty in tiles_to_check:
+			if 'F' not in self.grid[ty][tx]:
+				if self.learning_system:
+					self.learning_system.add_notification("Can only place on tillable farmland!")
+				return False
+		
+		# Check if any of the 4 tiles already have drip irrigation
+		for drip in self.drip_irrigation_sprites.sprites():
+			for (dx, dy) in drip.get_covered_tiles():
+				if (dx == x or dx == x + 1) and (dy == y or dy == y + 1):
+					if self.learning_system:
+						self.learning_system.add_notification("Drip irrigation already placed here!")
+					return False  # Overlapping
+		
+		# Place the drip irrigation setup
+		pixel_x = x * TILE_SIZE
+		pixel_y = y * TILE_SIZE
+		DripIrrigationSetup((pixel_x, pixel_y), [self.all_sprites, self.drip_irrigation_sprites])
+		
+		# Use one from inventory
+		player.drip_irrigation_count -= 1
+		
+		if self.learning_system:
+			self.learning_system.add_notification("Drip irrigation placed! Will auto-water 4 tiles daily.")
+		
+		return True
+	
+	def remove_drip_irrigation(self, target_pos, player):
+		"""Remove a drip irrigation setup at the target position.
+		Returns True if removed, False if none found."""
+		x = int(target_pos[0] // TILE_SIZE)
+		y = int(target_pos[1] // TILE_SIZE)
+		
+		for drip in self.drip_irrigation_sprites.sprites():
+			if (drip.grid_x, drip.grid_y) == (x, y) or \
+			   (drip.grid_x + 1, drip.grid_y) == (x, y) or \
+			   (drip.grid_x, drip.grid_y + 1) == (x, y) or \
+			   (drip.grid_x + 1, drip.grid_y + 1) == (x, y):
+				drip.kill()
+				player.drip_irrigation_count += 1  # Return to inventory
+				if self.learning_system:
+					self.learning_system.add_notification("Drip irrigation removed and returned to inventory.")
+				return True
+		return False
+	
+	def auto_water_drip_tiles(self):
+		"""Water all tiles covered by drip irrigation systems (called on new day, unless raining)"""
+		watered_count = 0
+		for drip in self.drip_irrigation_sprites.sprites():
+			for (x, y) in drip.get_covered_tiles():
+				if 0 <= x < self.grid_width and 0 <= y < self.grid_height:
+					# Only water tilled tiles with plants or just tilled
+					if 'X' in self.grid[y][x]:
+						pixel_x = x * TILE_SIZE
+						pixel_y = y * TILE_SIZE
+						# Add water if not already watered
+						if 'W' not in self.grid[y][x]:
+							self.grid[y][x].append('W')
+							WaterTile(
+								(pixel_x, pixel_y),
+								choice(self.water_surfs),
+								[self.all_sprites, self.water_sprites]
+							)
+							watered_count += 1
+		return watered_count

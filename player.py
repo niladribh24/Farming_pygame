@@ -35,6 +35,7 @@ class Player(pygame.sprite.Sprite):
 			'fertilizer use': Timer(350, self.use_fertilizer),
 			'fertilizer switch': Timer(200),
 			'irrigation switch': Timer(200),
+			'drip_place': Timer(350),  # Drip irrigation placement cooldown
 		}
 
 		# tools 
@@ -89,6 +90,9 @@ class Player(pygame.sprite.Sprite):
 		self.water_reserve = INITIAL_WATER_RESERVE
 		self.max_water_reserve = MAX_WATER_RESERVE
 		
+		# Drip irrigation setups (placeable items)
+		self.drip_irrigation_count = 0
+		
 		self.money = 200
 
 		# interaction
@@ -110,6 +114,9 @@ class Player(pygame.sprite.Sprite):
 		self.speed_skill_level = 0  # 0 = not unlocked, 1-3 = unlocked levels
 		self.base_speed = 200  # Base speed at level 0
 		self.speed_multipliers = {0: 1.0, 1: 1.1, 2: 1.2, 3: 1.3}  # 100%, 110%, 120%, 130%
+		
+		# Drip irrigation: unlockable item
+		self.drip_irrigation_unlocked = False
 		
 		# Apply initial skill effects
 		self._apply_skill_effects()
@@ -266,6 +273,15 @@ class Player(pygame.sprite.Sprite):
 				self.timers['fertilizer use'].activate()
 				self.direction = pygame.math.Vector2()
 				self.frame_index = 0
+			
+			# G key = place drip irrigation setup
+			if keys[pygame.K_g] and not self.timers['drip_place'].active:
+				self.timers['drip_place'].activate()  # Prevent spam
+				if self.drip_irrigation_count > 0:
+					target_pos = self.rect.center + PLAYER_TOOL_OFFSET[self.status.split('_')[0]]
+					self.soil_layer.place_drip_irrigation(target_pos, self)
+				elif self.learning_system:
+					self.learning_system.add_notification("No drip irrigation setups! Buy from shop.")
 			
 			# IRRIGATION CONTROLS
 			# O key = switch irrigation mode (only unlocked modes)

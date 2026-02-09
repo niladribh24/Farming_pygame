@@ -20,7 +20,9 @@ class SaveManager:
             'selected_seed_index': player.seed_index,
             # Skill levels
             'water_skill_level': player.water_skill_level,
-            'speed_skill_level': player.speed_skill_level
+            'speed_skill_level': player.speed_skill_level,
+            'drip_irrigation_unlocked': player.drip_irrigation_unlocked,
+            'drip_irrigation_count': player.drip_irrigation_count
         }
 
         # 2. Soil/Grid Data
@@ -65,12 +67,21 @@ class SaveManager:
                 'total_grow_days': plant.total_grow_days
             })
 
+        # Save drip irrigation setups
+        drip_data = []
+        for drip in soil_layer.drip_irrigation_sprites.sprites():
+            drip_data.append({
+                'x': drip.grid_x,
+                'y': drip.grid_y
+            })
+
         soil_data = {
             'soil_health': soil_health,
             'grid': soil_layer.grid,
             'water_count': soil_layer.water_count_grid,
             'last_crop': soil_layer.last_crop_grid,
-            'plants': plants_data
+            'plants': plants_data,
+            'drip_setups': drip_data
         }
 
         # 3. Learning System Data
@@ -127,6 +138,8 @@ class SaveManager:
             # Load skill levels
             player.water_skill_level = p_data.get('water_skill_level', 0)
             player.speed_skill_level = p_data.get('speed_skill_level', 0)
+            player.drip_irrigation_unlocked = p_data.get('drip_irrigation_unlocked', False)
+            player.drip_irrigation_count = p_data.get('drip_irrigation_count', 0)
             player._apply_skill_effects()  # Apply skill effects after loading
 
             # 2. Load Learning System
@@ -198,6 +211,15 @@ class SaveManager:
                             p_info['harvestable'], p_info.get('unwatered_days', 0),
                             p_info.get('fertilized_days', 0), p_info.get('total_grow_days', 0)
                         )
+            
+            # Load drip irrigation setups
+            if 'drip_setups' in s_data:
+                from soil import DripIrrigationSetup
+                for drip_info in s_data['drip_setups']:
+                    x, y = drip_info['x'], drip_info['y']
+                    pixel_x = x * 64
+                    pixel_y = y * 64
+                    DripIrrigationSetup((pixel_x, pixel_y), [soil_layer.all_sprites, soil_layer.drip_irrigation_sprites])
             
             print("Game Loaded!")
             

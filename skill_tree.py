@@ -145,6 +145,34 @@ SKILL_QUIZZES = {
                 "reward": "Speed Skill 3 (130%)"
             }
         }
+    },
+    "drip_irrigation": {
+        "name": "Drip Irrigation Quiz",
+        "description": "Unlock the drip irrigation block",
+        "skill_type": "drip",  # Unlocks drip irrigation item
+        "skill_rewards": ["Drip Irrigation Block"],
+        "levels": {
+            1: {
+                "questions": [
+                    {
+                        "question": "Drip irrigation systems deliver water through:",
+                        "options": ["A) Spraying in air", "B) Thin tubes with emitters", "C) Flooding fields", "D) Buckets"],
+                        "correct": "B"
+                    },
+                    {
+                        "question": "What is the main benefit of drip irrigation for farmers?",
+                        "options": ["A) Uses more water", "B) Waters faster", "C) Reduces water waste", "D) Cheaper seeds"],
+                        "correct": "C"
+                    },
+                    {
+                        "question": "Drip irrigation is best for crops that need:",
+                        "options": ["A) Flooded soil", "B) Consistent moisture at roots", "C) Dry conditions", "D) Saltwater"],
+                        "correct": "B"
+                    }
+                ],
+                "reward": "Drip Irrigation Block Unlocked!"
+            }
+        }
     }
 }
 
@@ -289,8 +317,11 @@ class SkillTreeUI:
         quiz = SKILL_QUIZZES[quiz_key]
         if quiz["skill_type"] == "water":
             return self.player.water_skill_level
-        else:  # speed
+        elif quiz["skill_type"] == "speed":
             return self.player.speed_skill_level
+        elif quiz["skill_type"] == "drip":
+            return 1 if self.player.drip_irrigation_unlocked else 0
+        return 0
     
     def _start_quiz(self):
         """Start a quiz at the next unlockable level"""
@@ -332,11 +363,13 @@ class SkillTreeUI:
         
         if self.level_passed:
             quiz = SKILL_QUIZZES[self.current_quiz_key]
-            # Award skill
+            # Award skill based on type
             if quiz["skill_type"] == "water":
                 self.player.water_skill_level = self.current_level
-            else:
+            elif quiz["skill_type"] == "speed":
                 self.player.speed_skill_level = self.current_level
+            elif quiz["skill_type"] == "drip":
+                self.player.drip_irrigation_unlocked = True
             self.player._apply_skill_effects()
     
     def display(self):
@@ -429,14 +462,21 @@ class SkillTreeUI:
             desc_surf = self.small_font.render(quiz["description"], False, (200, 200, 200))
             self.display_surface.blit(desc_surf, (entry_rect.left + 20, entry_rect.top + 38))
             
-            # Skill rewards info
-            reward_text = f"Rewards: {quiz['skill_rewards'][0]} -> {quiz['skill_rewards'][1]} -> {quiz['skill_rewards'][2]}"
+            # Skill rewards info (handle variable number of rewards)
+            rewards = quiz['skill_rewards']
+            if len(rewards) == 1:
+                reward_text = f"Reward: {rewards[0]}"
+            elif len(rewards) == 2:
+                reward_text = f"Rewards: {rewards[0]} -> {rewards[1]}"
+            else:
+                reward_text = f"Rewards: {rewards[0]} -> {rewards[1]} -> {rewards[2]}"
             reward_surf = self.small_font.render(reward_text, False, (100, 200, 255))
             self.display_surface.blit(reward_surf, (entry_rect.left + 20, entry_rect.top + 58))
             
-            # Progress indicators (3 circles for 3 levels)
-            for lvl in range(1, 4):
-                circle_x = entry_rect.right - 40 - (3 - lvl) * 35
+            # Progress indicators (circles based on number of levels)
+            num_levels = len(quiz["levels"])
+            for lvl in range(1, num_levels + 1):
+                circle_x = entry_rect.right - 40 - (num_levels - lvl) * 35
                 circle_y = entry_rect.top + 30
                 
                 if progress >= lvl:
@@ -452,7 +492,7 @@ class SkillTreeUI:
                 self.display_surface.blit(lvl_text, lvl_rect)
             
             # Next level hint
-            if progress < 3:
+            if progress < num_levels:
                 hint_text = f"Next: Level {progress + 1} (3 questions, need 2 correct)"
                 hint_surf = self.small_font.render(hint_text, False, (150, 200, 150))
                 self.display_surface.blit(hint_surf, (entry_rect.left + 20, entry_rect.bottom - 25))
@@ -490,10 +530,69 @@ class SkillTreeUI:
         pygame.draw.line(self.display_surface, (139, 90, 43),
                         (speed_x, branch_start_y + 10), (speed_x, branch_start_y + 30), 4)
         
-        # Water Skills Branch (left) - skills go DOWN
-        self._render_skill_branch_down(water_x, branch_start_y + 55, "Water Skills", 
-                                 ["Water 1 (100)", "Water 2 (150)", "Water 3 (200)"],
-                                 self.player.water_skill_level, (70, 150, 255))
+        # Water Skills title
+        water_title_y = branch_start_y + 55
+        water_title_surf = self.font.render("Water Skills", False, (70, 150, 255))
+        water_title_rect = water_title_surf.get_rect(center=(water_x, water_title_y))
+        self.display_surface.blit(water_title_surf, water_title_rect)
+        
+        # Horizontal line from Water Skills title to two branches
+        sub_branch_y = water_title_y + 25
+        water_sub_left = water_x - 70  # Water 1,2,3 branch
+        water_sub_right = water_x + 70  # Drip Irrigation branch
+        
+        pygame.draw.line(self.display_surface, (139, 90, 43),
+                        (water_sub_left, sub_branch_y), (water_sub_right, sub_branch_y), 3)
+        pygame.draw.line(self.display_surface, (139, 90, 43),
+                        (water_x, water_title_y + 15), (water_x, sub_branch_y), 3)
+        
+        # Vertical lines down from horizontal branch
+        pygame.draw.line(self.display_surface, (139, 90, 43),
+                        (water_sub_left, sub_branch_y), (water_sub_left, sub_branch_y + 20), 3)
+        pygame.draw.line(self.display_surface, (139, 90, 43),
+                        (water_sub_right, sub_branch_y), (water_sub_right, sub_branch_y + 20), 3)
+        
+        # Water 1, 2, 3 nodes (left sub-branch)
+        for i, skill_name in enumerate(["Water 1 (100)", "Water 2 (150)", "Water 3 (200)"]):
+            node_y = sub_branch_y + 45 + i * 55
+            node_rect = pygame.Rect(water_sub_left - 60, node_y, 120, 32)
+            
+            level = i + 1
+            is_unlocked = self.player.water_skill_level >= level
+            
+            if is_unlocked:
+                pygame.draw.rect(self.display_surface, (70, 150, 255), node_rect, 0, 6)
+                text_color = (255, 255, 255)
+            else:
+                pygame.draw.rect(self.display_surface, self.locked_color, node_rect, 0, 6)
+                pygame.draw.rect(self.display_surface, (60, 60, 60), node_rect, 2, 6)
+                text_color = (120, 120, 120)
+            
+            skill_text = self.small_font.render(skill_name, False, text_color)
+            skill_rect = skill_text.get_rect(center=node_rect.center)
+            self.display_surface.blit(skill_text, skill_rect)
+            
+            # Connector line
+            if i < 2:
+                pygame.draw.line(self.display_surface, (100, 80, 60),
+                                (water_sub_left, node_y + 32), (water_sub_left, node_y + 55), 2)
+        
+        # Drip Irrigation node (right sub-branch)
+        drip_y = sub_branch_y + 45
+        drip_unlocked = self.player.drip_irrigation_unlocked
+        drip_rect = pygame.Rect(water_sub_right - 65, drip_y, 130, 32)
+        
+        if drip_unlocked:
+            pygame.draw.rect(self.display_surface, (100, 200, 255), drip_rect, 0, 6)
+            text_color = (255, 255, 255)
+        else:
+            pygame.draw.rect(self.display_surface, self.locked_color, drip_rect, 0, 6)
+            pygame.draw.rect(self.display_surface, (60, 60, 60), drip_rect, 2, 6)
+            text_color = (120, 120, 120)
+        
+        drip_text = self.small_font.render("Drip Irrigation", False, text_color)
+        drip_text_rect = drip_text.get_rect(center=drip_rect.center)
+        self.display_surface.blit(drip_text, drip_text_rect)
         
         # Speed Skills Branch (right) - skills go DOWN
         self._render_skill_branch_down(speed_x, branch_start_y + 55, "Speed Skills",

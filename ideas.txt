@@ -1,11 +1,13 @@
 ideas :
-- Drip irrigation through skills
 - Badges at shopkeeper for finishing quizzes 
 - Rain Water Harvesting
 - Punishment for not sleeping all night
 - Tutorial
 
 DONE :
+- New yielding system based of Fertilizing & Tile Health
+- Tile turns to grass at 0% health
+- Drip irrigation through skills
 - Quizes for Skills
 - Skill Tree & Gameplay Affecting Skills
 - Tile Health affected by Fertilizers

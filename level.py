@@ -76,6 +76,10 @@ class Level:
 		
 		# Skill tree
 		self.skill_tree = get_skill_tree(self.player)
+		
+		# Drip irrigation removal confirmation
+		self.drip_removal_pending = False
+		self.drip_removal_target = None
 		self.skill_tree_toggle_timer = pygame.time.get_ticks()
 
 		# music
@@ -212,6 +216,11 @@ class Level:
 			self.soil_layer.water_all()
 			# Collect rainwater into player's reserve
 			self.player.collect_rainwater(5)
+		else:
+			# Drip irrigation auto-waters when not raining (prevents overwatering)
+			drip_watered = self.soil_layer.auto_water_drip_tiles()
+			if drip_watered > 0:
+				self.learning_system.add_notification(f"Drip irrigation watered {drip_watered} tiles automatically!")
 		
 		# Auto-save after day transition (update trees first)
 		# Regrow trees logic
@@ -235,20 +244,43 @@ class Level:
 		if self.soil_layer.plant_sprites:
 			for plant in self.soil_layer.plant_sprites.sprites():
 				if plant.harvestable and plant.rect.colliderect(self.player.hitbox):
-					# Check for double yield (fertilized majority of growth days)
-					fertilizer_bonus = False
+					# Get tile health for multiplier
+					tile_health = self.soil_layer.get_tile_soil_health(plant.rect.center)
+					
+					# Tile health multiplier: <50% = x1, >=50% = x2, 100% = x4
+					if tile_health >= 100:
+						health_multiplier = 4
+					elif tile_health >= 50:
+						health_multiplier = 2
+					else:
+						health_multiplier = 1
+					
+					# Fertilizer bonus: x2 if fertilized majority of growth days
+					fertilizer_multiplier = 1
 					if plant.total_grow_days > 0:
 						fertilized_ratio = plant.fertilized_days / plant.total_grow_days
 						if fertilized_ratio >= 0.5:  # 50% or more days fertilized
-							fertilizer_bonus = True
+							fertilizer_multiplier = 2
 					
-					# Add to inventory (base yield)
-					self.player_add(plant.plant_type)
+					# Total yield = base * health_multiplier * fertilizer_multiplier
+					total_yield = health_multiplier * fertilizer_multiplier
 					
-					# Double yield if fertilized majority of days
-					if fertilizer_bonus:
+					# Add to inventory based on total yield
+					for _ in range(total_yield):
 						self.player_add(plant.plant_type)
-						self.learning_system.add_notification("🌾 Double harvest from well-fertilized crop!")
+					
+					# Show notification based on multiplier and add score bonus
+					if total_yield >= 8:
+						self.learning_system.add_notification(f"x{total_yield} MEGA harvest! (100% health + fertilized) +20pts")
+						self.learning_system.add_score(20, "mega_harvest")
+					elif total_yield >= 4:
+						self.learning_system.add_notification(f"x{total_yield} harvest! (great soil + fertilizer) +8pts")
+						self.learning_system.add_score(8, "great_harvest")
+					elif total_yield >= 2:
+						self.learning_system.add_notification(f"x{total_yield} harvest from healthy soil! +3pts")
+						self.learning_system.add_score(3, "good_harvest")
+					else:
+						self.learning_system.add_score(1, "harvest")
 					
 					plant.kill()
 					Particle(plant.rect.topleft, plant.image, self.all_sprites, z = LAYERS['main'])
@@ -289,6 +321,32 @@ class Level:
 			if current_time - self.skill_tree_toggle_timer > 400:
 				self.skill_tree.toggle()
 				self.skill_tree_toggle_timer = current_time
+		
+		# X key to remove drip irrigation (with confirmation)
+		if keys[pygame.K_x] and not self.player.sleep and not self.shop_active:
+			if current_time - self.skill_tree_toggle_timer > 400:  # Reuse timer
+				self.skill_tree_toggle_timer = current_time
+				if self.drip_removal_pending:
+					# Confirm removal
+					if self.drip_removal_target:
+						self.soil_layer.remove_drip_irrigation(self.drip_removal_target, self.player)
+					self.drip_removal_pending = False
+					self.drip_removal_target = None
+				else:
+					# Check if standing on drip irrigation
+					target_pos = self.player.rect.center
+					for drip in self.soil_layer.drip_irrigation_sprites.sprites():
+						if drip.rect.collidepoint(target_pos):
+							self.drip_removal_pending = True
+							self.drip_removal_target = target_pos
+							self.learning_system.add_notification("Remove drip irrigation? Press X again to confirm, ESC to cancel.")
+							break
+		
+		# ESC cancels drip removal
+		if keys[pygame.K_ESCAPE] and self.drip_removal_pending:
+			self.drip_removal_pending = False
+			self.drip_removal_target = None
+			self.learning_system.add_notification("Removal cancelled.")
 		
 		# Main game state updates
 		if self.settings_menu.is_open:
