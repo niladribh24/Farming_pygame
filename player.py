@@ -376,7 +376,7 @@ class Player(pygame.sprite.Sprite):
 			# G key = place drip irrigation setup
 			if keys[pygame.K_g] and not self.timers['drip_place'].active:
 				self.timers['drip_place'].activate()  # Prevent spam
-				if self.equipment_inventory.get('drip_emitter', 0) > 0:
+				if self.drip_irrigation_count > 0:
 					target_pos = self.rect.center + PLAYER_TOOL_OFFSET[self.status.split('_')[0]]
 					self.soil_layer.place_drip_irrigation(target_pos, self)
 				elif self.learning_system:

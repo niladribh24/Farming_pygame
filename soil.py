@@ -596,8 +596,8 @@ class SoilLayer:
 		x = int(target_pos[0] // TILE_SIZE)
 		y = int(target_pos[1] // TILE_SIZE)
 		
-		# Check if player has drip setups available (Use equipment inventory)
-		if player.equipment_inventory.get('drip_emitter', 0) <= 0:
+		# Check if player has drip setups available
+		if player.drip_irrigation_count <= 0:
 			return False
 		
 		# Check if all 4 tiles are within bounds
