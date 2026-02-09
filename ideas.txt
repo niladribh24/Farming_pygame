@@ -5,6 +5,8 @@ ideas :
 - Tutorial
 
 DONE :
+- Undo Feature in Shop
+- Drip irrigation can only be placed next to water block (Using Graphs)
 - New yielding system based of Fertilizing & Tile Health
 - Tile turns to grass at 0% health
 - Drip irrigation through skills

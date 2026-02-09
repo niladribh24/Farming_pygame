@@ -168,6 +168,8 @@ class Level:
 	def toggle_shop(self):
 
 		self.shop_active = not self.shop_active
+		if not self.shop_active:
+			self.menu.purchase_stack.clear()
 	
 	def place_water_tank(self, pos):
 		x = (int(pos[0]) // TILE_SIZE) * TILE_SIZE

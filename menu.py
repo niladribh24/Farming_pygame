@@ -53,10 +53,53 @@ class Menu:
         
         self.notifications = []
         self.notification_duration = 2000  # 2 seconds
+        self.purchase_stack = []
 
     def show_notification(self, message):
         import pygame
         self.notifications.append((message, pygame.time.get_ticks()))
+
+    def undo_last_purchase(self):
+        if not self.purchase_stack:
+            self.show_notification("Nothing to undo!")
+            return
+
+        last_transaction = self.purchase_stack.pop()
+        action = last_transaction['action']
+        item = last_transaction['item']
+        price = last_transaction['price']
+        amount = last_transaction['amount']
+
+        # Refund money
+        self.player.money += price
+
+        # Revert inventory changes
+        if action == 'buy_seed':
+            if self.player.seed_inventory[item] >= amount:
+                self.player.seed_inventory[item] -= amount
+                self.show_notification(f"Undid purchase: {item} seeds")
+        
+        elif action == 'buy_fert':
+             if self.player.fertilizer_inventory[item] >= amount:
+                self.player.fertilizer_inventory[item] -= amount
+                self.show_notification(f"Undid purchase: {item}")
+
+        elif action == 'buy_water':
+            self.player.water_reserve = max(0, self.player.water_reserve - amount)
+            self.show_notification(f"Undid purchase: Water")
+            
+        elif action == 'buy_drip':
+            if self.player.drip_irrigation_count >= amount:
+                 self.player.drip_irrigation_count -= amount
+                 self.show_notification(f"Undid purchase: Drip Irrigation")
+
+        elif action == 'buy_equip':
+            if self.player.equipment_inventory.get(item, 0) >= amount:
+                 self.player.equipment_inventory[item] -= amount
+                 if self.player.equipment_inventory[item] == 0:
+                     del self.player.equipment_inventory[item]
+                 self.show_notification(f"Undid purchase: {EQUIPMENT_DATA.get(item, {}).get('name', item)}")
+
 
     def _build_item_lists(self):
         self.tab_items = {
@@ -316,6 +359,10 @@ class Menu:
         keys = pygame.key.get_pressed()
         self.timer.update()
 
+        if keys[pygame.K_z] and not self.timer.active:
+            self.undo_last_purchase()
+            self.timer.activate()
+
         if keys[pygame.K_ESCAPE]:
             if self.quiz_active:
                 self.quiz_active = False # Back to list
@@ -410,6 +457,12 @@ class Menu:
                             if self.player.money >= price:
                                 self.player.seed_inventory[item] += 1
                                 self.player.money -= price
+                                self.purchase_stack.append({
+                                    'action': 'buy_seed',
+                                    'item': item,
+                                    'price': price,
+                                    'amount': 1
+                                })
                             else:
                                 self.show_notification("Not enough money!")
                                 
@@ -418,17 +471,33 @@ class Menu:
                             if self.player.money >= price:
                                 self.player.fertilizer_inventory[item] += 1
                                 self.player.money -= price
+                                self.purchase_stack.append({
+                                    'action': 'buy_fert',
+                                    'item': item,
+                                    'price': price,
+                                    'amount': 1
+                                })
                             else:
                                 self.show_notification("Not enough money!")
                                 
                          elif action == 'buy_water':
                             price = 5
                             if self.player.money >= price:
+                                old_water = self.player.water_reserve
                                 self.player.water_reserve = min(
                                     self.player.max_water_reserve,
                                     self.player.water_reserve + 10
                                 )
+                                added_amount = self.player.water_reserve - old_water
                                 self.player.money -= price
+                                
+                                if added_amount > 0:
+                                     self.purchase_stack.append({
+                                        'action': 'buy_water',
+                                        'item': 'water',
+                                        'price': price,
+                                        'amount': added_amount
+                                    })
                             else:
                                 self.show_notification("Not enough money!")
                          
@@ -437,6 +506,12 @@ class Menu:
                             if self.player.money >= price:
                                 self.player.drip_irrigation_count += 1
                                 self.player.money -= price
+                                self.purchase_stack.append({
+                                    'action': 'buy_drip',
+                                    'item': 'drip_irrigation',
+                                    'price': price,
+                                    'amount': 1
+                                })
                                 self.show_notification("Drip Irrigation Setup purchased!")
                             else:
                                 self.show_notification("Not enough money!")
@@ -463,6 +538,12 @@ class Menu:
                                 self.player.equipment_inventory[item] = self.player.equipment_inventory.get(item, 0) + 1
                                 self.player.money -= price
                                 self.notifications.append((f"✓ Bought {equip_data.get('name', item)}!", pygame.time.get_ticks()))
+                                self.purchase_stack.append({
+                                    'action': 'buy_equip',
+                                    'item': item,
+                                    'price': price,
+                                    'amount': 1
+                                })
                             elif can_buy:
                                 self.notifications.append(("Not enough money!", pygame.time.get_ticks()))
                          elif action == 'sell':

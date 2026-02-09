@@ -332,15 +332,7 @@ class Player(pygame.sprite.Sprite):
 						mode_name = IRRIGATION_DATA[self.selected_irrigation]['name']
 						self.learning_system.add_notification(f"🚿 Switched to {mode_name}")
 			
-			if keys[pygame.K_g] and not self.timers['equipment switch'].active:
-				self.timers['equipment switch'].activate()
-				self.equipment_index = (self.equipment_index + 1) % len(self.equipment_types)
-				self.selected_equipment = self.equipment_types[self.equipment_index]
-				from knowledge_base import EQUIPMENT_DATA
-				equip_name = EQUIPMENT_DATA[self.selected_equipment]['name']
-				if self.learning_system:
-					count = self.equipment_inventory.get(self.selected_equipment, 0)
-					self.learning_system.add_notification(f"🔧 {equip_name} ({count})")
+
 			
 
 			if keys[pygame.K_RETURN]:
