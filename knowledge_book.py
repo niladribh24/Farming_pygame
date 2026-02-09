@@ -274,7 +274,12 @@ QUICK_TIPS = [
     "💡 Press B to open the Knowledge Book",
     "💡 Unlock skills by practicing sustainable farming",
     "💡 Chemical fertilizers harm soil long-term",
-    "💡 Let some land rest (fallow) to recover"
+    "💡 Let some land rest (fallow) to recover",
+    "💡 Press T to open the Skill Tree",
+    "💡 Press G to place drip irrigation",
+    "💡 Press X to remove drip irrigation",
+    "💡 Drip irrigation auto-waters 4 tiles daily!",
+    "💡 Buy drip irrigation from the shop (SUPPLIES tab)"
 ]
 
 def get_unlocked_cards():

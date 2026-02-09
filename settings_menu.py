@@ -50,12 +50,15 @@ class SettingsMenu:
             ('Left Ctrl', 'Plant seed'),
             ('F', 'Switch fertilizer'),
             ('R', 'Apply fertilizer'),
+            ('G', 'Place drip irrigation'),
+            ('X', 'Remove drip irrigation'),
             ('O', 'Switch irrigation mode'),
             ('I', 'Open Inventory'),
-            ('T', 'Open Skill Book'),
+            ('T', 'Open Skill Tree'),
             ('B', 'Open Knowledge Book'),
             ('P', 'Open Settings'),
             ('Enter', 'Interact (shop/bed)'),
+            ('Escape', 'Close menus'),
         ]
         self.controls_scroll = 0  # Scroll offset for controls
         self.max_visible_controls = 10  # Max controls visible at once
