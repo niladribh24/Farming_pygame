@@ -549,19 +549,12 @@ class SoilLayer:
 	
 	def _get_connected_drip_emitters(self):
 		from collections import deque
-		"""
-		GRAPH ALGORITHM: BFS for Irrigation Network
-		Nodes: Water Tanks (Sources) and Drip Emitters
-		Edges: Physical adjacency (touching sprites)
-		Returns: Set of DripIrrigationSetup sprites that are connected to a source.
-		"""
 
 		connected_emitters = set()
 		
-		# 1. Identify Sources (Water Tanks + River)
+		# Identify Sources (Water Tanks + River)
 		sources_found = False
 		
-		# Queue for BFS
 		queue = deque()
 		visited = set()
 		
@@ -572,7 +565,6 @@ class SoilLayer:
 				visited.add(tank)
 				sources_found = True
 				
-		# Add River Tiles (User Request: Infinite Source)
 		if hasattr(self, 'river_sprites') and self.river_sprites:
 			for river in self.river_sprites.sprites():
 				queue.append(river)
@@ -582,20 +574,15 @@ class SoilLayer:
 		if not sources_found:
 			return connected_emitters
 			
-		# All possible conduits
 		all_drips = self.drip_irrigation_sprites.sprites()
 		
-		# 2. Perform BFS Traversal
 		while queue:
 			current_node = queue.popleft()
 			
-			# Check for adjacent drip emitters (Edges)
-			# Inflate rect slightly to detect touching sprites
-			# SPECIAL CASE: River sources need larger reach (to cross untillable river bank)
 			if hasattr(self, 'river_sprites') and current_node in self.river_sprites:
-				search_rect = current_node.rect.inflate(150, 150) # ~1 tile gap allowance
+				search_rect = current_node.rect.inflate(150, 150)
 			else:
-				search_rect = current_node.rect.inflate(40, 40) # Increased tolerance for sloppy placement
+				search_rect = current_node.rect.inflate(40, 40)
 			
 			for drip in all_drips:
 				if drip not in visited:
@@ -608,24 +595,19 @@ class SoilLayer:
 		return connected_emitters
 
 	def auto_water_drip_tiles(self):
-		# GRAPH: Build connectivity graph first
 		connected_drips = self._get_connected_drip_emitters()
 		
 		watered_count = 0
 		disconnected_count = 0
 		
 		for drip in self.drip_irrigation_sprites.sprites():
-			# Logic: Only water if connected to source
+			# Only water if connected to source
 			if drip in connected_drips:
 				for (x, y) in drip.get_covered_tiles():
 					if 0 <= x < self.grid_width and 0 <= y < self.grid_height:
-						if 'X' in self.grid[y][x]: # 'X' means tilled soil? Actually check logic below
+						if 'X' in self.grid[y][x]:
 							pixel_x = x * TILE_SIZE
 							pixel_y = y * TILE_SIZE
-							
-							# Need to check if it's farmable/hoed soil?
-							# Original code checked: if 'X' in self.grid[y][x]
-							# Wait, 'X' is usually created by hoeing.
 							
 							has_water = False
 							for cell in self.grid[y][x]:
